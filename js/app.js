@@ -1,20 +1,20 @@
 var SB_URL = 'https://gjxbyxpbuomyuqyrieuc.supabase.co';
 var SB_KEY = 'sb_publishable_5wUycHhaBXqdTk2ktSKywg_3HuPBpV4';
-var ADMIN_KEY = 'monteverdi';
+var ADMIN_KEY = 'maquinarias';
 var EMAIL_ENDPOINT = 'https://api.emailjs.com/api/v1.0/email/send';
 var EMAIL_SERVICE_ID = 'service_mbi0sr9';
 var EMAIL_TEMPLATE_ID = 'template_jqljo28';
 var EMAIL_PUBLIC_KEY = 'RZLZQ0ckeCPRV-dVw';
 var sb = supabase.createClient(SB_URL, SB_KEY);
-var camiones = [], choferes = [], otCounter = 1, otsCache = [], adminOk = false;
+var maquinarias = [], choferes = [], otCounter = 1, otsCache = [], adminOk = false;
 var allReportes = [];
 var tipoActual = '';
 var detalleCamionId = null;
 var isOnline = navigator.onLine;
-var camionesOcultos = ['CARR', 'SEMI', '106', 'CARRETON', 'SEMIREMOLQUE'];
+var maquinariasOcultos = ['CARR', 'SEMI', '106', 'CARRETON', 'SEMIREMOLQUE'];
 var flotaExpandida = false;
-function camionVisible(c) {
-  return camionesOcultos.indexOf(c.id) < 0;
+function maquinariaVisible(c) {
+  return maquinariasOcultos.indexOf(c.id) < 0;
 }
 
 function getOfflineQueue() {
@@ -39,11 +39,11 @@ async function processOfflineQueue() {
       if (op.type === 'insert_reporte') {
         await sb.from('reportes').insert([op.data]);
       } else if (op.type === 'insert_camion') {
-        await sb.from('camiones').insert([op.data]);
+        await sb.from('maquinarias').insert([op.data]);
       } else if (op.type === 'insert_chofer') {
         await sb.from('choferes').insert([op.data]);
       } else if (op.type === 'delete_camion') {
-        await sb.from('camiones').delete().eq('id', op.data);
+        await sb.from('maquinarias').delete().eq('id', op.data);
       } else if (op.type === 'delete_chofer') {
         await sb.from('choferes').delete().eq('id', op.data);
       } else if (op.type === 'delete_reporte') {
@@ -56,7 +56,7 @@ async function processOfflineQueue() {
   saveOfflineQueue(remaining);
   if (remaining.length === 0 && q.length > 0) {
     await loadAllReportes();
-    await loadCamiones();
+    await loadmaquinarias();
     await loadChoferes();
   }
   updateOnlineStatus();
@@ -83,25 +83,34 @@ window.addEventListener('offline', function() {
 });
 
 var RD = [
-  {id:'100',nom:'IVECO TRAKKER 350',pat:'NBK032',cho:'---',cap:'9m3',est:'REPARACION',seg:'02/07/2026',rto:'21/01/2026',us:'05/04/2025',ps:'224.000 km',ue:'05/04/2025',pe:'214.900 km',uc:'05/04/2025',pc:'224.000 km',ub:'---',pb:'---'},
-  {id:'101',nom:'IVECO TECTOR ATTACK',pat:'AG-160-NG',cho:'David Maldonado',cap:'7m3',est:'DISPONIBLE',seg:'02/07/2026',rto:'03/06/2027',us:'12/05/2026',ps:'3.000 hs',ue:'12/05/2026',pe:'2.650 hs',uc:'12/05/2026',pc:'3.000 hs',ub:'---',pb:'---'},
-  {id:'102',nom:'SCANIA P380',pat:'AD-774-EJ',cho:'Victor Rosa',cap:'8m3',est:'DISPONIBLE',seg:'02/07/2026',rto:'05/01/2027',us:'27/04/2026',ps:'315.580 km',ue:'27/04/2026',pe:'306.000 km',uc:'27/04/2026',pc:'315.580 km',ub:'09/08/2024',pb:'---'},
-  {id:'104',nom:'SCANIA P420',pat:'AD-774-ED',cho:'Mauricio Mercau',cap:'9m3',est:'DISPONIBLE',seg:'02/07/2026',rto:'05/01/2027',us:'16/04/2026',ps:'260.000 km',ue:'05/05/2026',pe:'250.800 km',uc:'19/02/2026',pc:'258.133 km',ub:'---',pb:'---'},
-  {id:'105',nom:'SCANIA 380',pat:'AD-774-EK',cho:'Horacio Chacon',cap:'9m3',est:'DISPONIBLE',seg:'02/07/2026',rto:'07/08/2026',us:'27/04/2026',ps:'228.620 km',ue:'27/04/2026',pe:'219.000 km',uc:'27/04/2026',pc:'228.620 km',ub:'---',pb:'---'},
-  {id:'108',nom:'IVECO TRAKKER 380',pat:'AG-473-RK',cho:'Diego Silva',cap:'9m3',est:'REPARACION',seg:'02/07/2026',rto:'08/05/2026',us:'17/04/2026',ps:'347.779 km',ue:'17/04/2026',pe:'338.000 km',uc:'17/04/2026',pc:'338.000 km',ub:'24/02/2025',pb:'---'},
-  {id:'110',nom:'IVECO TRAKKER 410',pat:'AG-473-RJ',cho:'Luis Mercau',cap:'9m3',est:'DISPONIBLE',seg:'02/07/2026',rto:'07/08/2026',us:'21/04/2026',ps:'308.900 km',ue:'21/04/2026',pe:'299.300 km',uc:'21/04/2026',pc:'308.900 km',ub:'30/01/2025',pb:'---'},
-  {id:'113',nom:'FORD CARGO 2625',pat:'DMQ335',cho:'---',cap:'7m3',est:'DISPONIBLE',seg:'02/07/2026',rto:'07/11/2026',us:'05/05/2026',ps:'130.665 km',ue:'05/05/2026',pe:'121.000 km',uc:'05/05/2026',pc:'130.665 km',ub:'08/11/2024',pb:'---'},
-  {id:'114',nom:'IVECO TECTOR BOMBA',pat:'AE-378-JW',cho:'Dario Guerra',cap:'32mts',est:'DISPONIBLE',seg:'02/07/2026',rto:'18/05/2027',us:'16/04/2026',ps:'5.000 km',ue:'16/04/2026',pe:'4.700 km',uc:'16/04/2026',pc:'5.000 km',ub:'15/07/2024',pb:'---'},
-  {id:'918',nom:'CAT CARGADORA 918',pat:'---',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'23/04/2026',ps:'28.100 hs',ue:'23/04/2026',pe:'28.750 hs',uc:'23/04/2026',pc:'28.100 hs',ub:'23/04/2026',pb:'---'},
-    {id:'106',nom:'DIMEX 74-310',pat:'CMS120',cho:'David',cap:'---',est:'DISPONIBLE',seg:'28/11/2024',rto:'13/09/2026',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
-  {id:'109',nom:'IVECO CURSOR 330',pat:'PJD392',cho:'David',cap:'---',est:'DISPONIBLE',seg:'29/07/2025',rto:'30/07/2026',us:'13/08/2025',ps:'210.000 km',ue:'---',pe:'---',uc:'---',pc:'---',ub:'17/02/2025',pb:'---'},
-  {id:'107',nom:'MERCEDES HIDRO',pat:'IVA173',cho:'J. Moran',cap:'6.000 kg',est:'DISPONIBLE',seg:'07/12/2024',rto:'07/01/2027',us:'20/10/2025',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
-  {id:'115',nom:'MERCEDES ACCELO',pat:'AF-026-OS',cho:'Marcos',cap:'---',est:'DISPONIBLE',seg:'29/10/2025',rto:'VENCIDA',us:'18/12/2025',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'26/05/2025',pb:'---'},
-  {id:'116',nom:'ISUZU NPR 75',pat:'AG664XK',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'27/04/2026',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
-    {id:'HILUX',nom:'TOYOTA HILUX',pat:'---',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'VENCIDA',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
-  {id:'CARRETON',nom:'CARRETON',pat:'---',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'13/09/2026',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
-  {id:'SEMIREMOLQUE',nom:'SEMIREMOLQUE',pat:'---',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'26/12/2026',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
-  ];
+  {id:'CF 02',nom:'KOMATSU',pat:'CF 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'ME 01',nom:'MINI EXCAVADORA',pat:'ME 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'MA 01',nom:'HAULOTTE 01',pat:'MA 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'MA 02',nom:'HAULOTTE 02',pat:'MA 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'MA 03',nom:'HAULOTTE 03',pat:'MA 03',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'MA 04',nom:'SKAY TRACK',pat:'MA 04',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'MA 05',nom:'SKAY TRACK',pat:'MA 05',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'RE 01',nom:'RETROEXCAVADORA CASE C/MARTILLO',pat:'RE 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'RE 02',nom:'RETROEXCAVADORA CASE S/MARTILLO',pat:'RE 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'RE 03',nom:'CAT 416E (MAQUINA GERMAN)',pat:'RE 03',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'RE 04',nom:'RETROEXCAVADORA CASE NUEVA',pat:'RE 04',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'RO 01',nom:'RETROEXCAVADORA HYUNDAI',pat:'RO 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'CO 01',nom:'COMPACTADOR DYNAPAC',pat:'CO 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'CO 02',nom:'COMPACTADOR BOMAG',pat:'CO 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'CO 03',nom:'COMPACTADOR AMMAN',pat:'CO 03',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'CP 01',nom:'COMPRESOR CON MANGUERA',pat:'CP 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'CP 02',nom:'COMPRESOR 100 LTS',pat:'CP 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GE 01',nom:'GENERADOR GRANDE CUMMINGS',pat:'GE 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GE 02',nom:'GENERADOR CHICO PALMERO',pat:'GE 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GT 01',nom:'GRUA TORRE SAEZ',pat:'GT 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GT 02',nom:'GRUA TORRE SAEZ',pat:'GT 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GT 03',nom:'GRUA TORRE SAE46',pat:'GT 03',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GT 04',nom:'GRUA TORRE TROJSI',pat:'GT 04',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GM 01',nom:'GRUA TORTONE',pat:'GM 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GM 02',nom:'GRUA MOVIL BPR',pat:'GM 02',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'GM 03',nom:'GRUA CRANE',pat:'GM 03',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'},
+  {id:'TI 01',nom:'TIJERA AZUL',pat:'TI 01',cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'}
+];
 function loadRes() {
   try { var r = localStorage.getItem('m3v8'); if (r) return JSON.parse(r); } catch(e) {}
   return JSON.parse(JSON.stringify(RD));
@@ -110,7 +119,7 @@ function saveRes(d) {   try { localStorage.setItem('m3v8', JSON.stringify(d)); }
 var resData = loadRes();
 
 function getCam(id) { for (var i=0;i<resData.length;i++) if (resData[i].id===id) return resData[i]; return null; }
-function getCamModelo(id) { for (var i=0;i<camiones.length;i++) if (camiones[i].id===id) return camiones[i].modelo; return ''; }
+function getCamModelo(id) { for (var i=0;i<maquinarias.length;i++) if (maquinarias[i].id===id) return maquinarias[i].modelo; return ''; }
 
 async function init() {
    try {
@@ -119,7 +128,7 @@ async function init() {
      document.getElementById('r-fec').value = new Date().toISOString().split('T')[0];
      document.getElementById('rep-fec').value = new Date().toISOString().split('T')[0];
      loadReportesLocal();
-     await loadCamionesOffline();
+     await loadmaquinariasOffline();
      await loadChoferes();
      await loadOTCounter();
      await loadAllReportes();
@@ -127,7 +136,7 @@ async function init() {
     var camionParam = urlParams.get('camion');
     var tabParam = urlParams.get('tab');
     if (camionParam) {
-      var exists = camiones.some(function(c) { return c.id === camionParam; });
+      var exists = maquinarias.some(function(c) { return c.id === camionParam; });
       if (exists) {
         document.getElementById('r-cam').value = camionParam;
         var tabBtn = document.querySelectorAll('.tab')[1];
@@ -145,15 +154,15 @@ async function init() {
    }
  }
 
- function loadCamionesOffline() {
+ function loadmaquinariasOffline() {
    loadReportesLocal();
-   return loadCamiones();
+   return loadmaquinarias();
  }
 
-async function loadCamiones() {
-  var r = await sb.from('camiones').select('*').order('id');
-  camiones = r.data || [];
-  fillCamiones();
+async function loadmaquinarias() {
+  var r = await sb.from('maquinarias').select('*').order('id');
+  maquinarias = r.data || [];
+  fillmaquinarias();
 }
 async function loadChoferes() {
   var r = await sb.from('choferes').select('*').order('nombre');
@@ -183,13 +192,13 @@ function loadReportesLocal() {
    try { var r = localStorage.getItem('m3v7_reportes'); if (r) allReportes = JSON.parse(r); } catch(e) {}
  }
 
-function fillCamiones() {
+function fillmaquinarias() {
   var q = '<option value="">Selecciona...</option>';
-  var visibles = camiones.filter(camionVisible);
+  var visibles = maquinarias.filter(maquinariaVisible);
   for (var i = 0; i < visibles.length; i++) q += '<option value="'+visibles[i].id+'">'+visibles[i].id+' - '+visibles[i].modelo+'</option>';
   if (q.indexOf('HILUX') < 0) q += '<option value="HILUX">HILUX - TOYOTA HILUX</option>';
   document.getElementById('r-cam').innerHTML = q;
-  var q2 = '<option value="">Todos los camiones</option>';
+  var q2 = '<option value="">Todos los maquinarias</option>';
   for (var i = 0; i < visibles.length; i++) q2 += '<option value="'+visibles[i].id+'">'+visibles[i].id+' - '+visibles[i].modelo+'</option>';
   if (q2.indexOf('HILUX') < 0) q2 += '<option value="HILUX">HILUX - TOYOTA HILUX</option>';
   document.getElementById('fil-cam').innerHTML = q2;
@@ -231,9 +240,9 @@ function showMsg(id, type, txt) {
 }
 
 function tbadge(t) {
-  var m = {falla:'bred',service:'bamb',reparacion:'bpur',preventivo:'bgrn',engrase:'bblu',neumatico:'borg'};
-  var l = {falla:'Falla',service:'Service',reparacion:'Reparacion',preventivo:'Preventivo',engrase:'Engrase',neumatico:'Neumatico'};
-  var icons = {falla:'ti-alert-triangle',service:'ti-tool',reparacion:'ti-hammer',preventivo:'ti-shield-check',engrase:'ti-droplet',neumatico:'ti-circle-dot'};
+  var m = {falla:'bred',service:'bamb',reparacion:'bpur',preventivo:'bgrn',engrase:'bblu',neumatico:'borg',componentes:'borange'};
+  var l = {falla:'Falla',service:'Service',reparacion:'Reparacion',preventivo:'Preventivo',engrase:'Engrase',neumatico:'Neumatico',componentes:'Componentes'};
+  var icons = {falla:'ti-alert-triangle',service:'ti-tool',reparacion:'ti-hammer',preventivo:'ti-shield-check',engrase:'ti-droplet',neumatico:'ti-circle-dot',componentes:'ti-wrench'};
   return '<span class="badge '+(m[t]||'bgry')+'"><i class="ti '+(icons[t]||'ti-tag')+'"></i>'+(l[t]||t)+'</span>';
 }
 function fmtP(n) { if (!n || n === 0) return '-'; return '$'+Math.round(n).toLocaleString('es-AR'); }
@@ -370,7 +379,7 @@ function renderFlota() {
   var q = (document.getElementById('search-flota').value || '').toLowerCase().trim();
   var el = document.getElementById('flota-grid');
   var filtrados = resData.filter(function(c) {
-    if (!camionVisible(c)) return false;
+    if (!maquinariaVisible(c)) return false;
     if (!q) return true;
     return c.id.toLowerCase().indexOf(q) >= 0 || c.nom.toLowerCase().indexOf(q) >= 0 || c.cho.toLowerCase().indexOf(q) >= 0;
   });
@@ -572,7 +581,7 @@ function qpReset() {
 
 function pickTipo(t) {
   tipoActual = t;
-  var labels = {falla:'Reportar Falla',preventivo:'Reportar Preventivo',service:'Reportar Service',engrase:'Reportar Engrase'};
+  var labels = {falla:'Reportar Falla',preventivo:'Reportar Preventivo',service:'Reportar Service',engrase:'Reportar Engrase',neumatico:'Reportar Neumáticos',componentes:'Reportar Componentes/Desgaste'};
   document.getElementById('qp-tipo-tit').textContent = labels[t];
   document.getElementById('qp-step1').classList.add('hid');
   document.getElementById('qp-step2').classList.remove('hid');
@@ -894,14 +903,14 @@ async function openOT(id) {
 
 /* ============ CONFIG ============ */
 async function loadConfig() {
-  await loadCamiones(); await loadChoferes();
+  await loadmaquinarias(); await loadChoferes();
   var html = '';
-  for (var i = 0; i < camiones.length; i++) {
+  for (var i = 0; i < maquinarias.length; i++) {
     html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EEF4FF;font-size:14px">';
-    html += '<span><strong>'+camiones[i].id+'</strong> - '+camiones[i].modelo+'</span>';
-    html += '<button class="bd" onclick="delCamion(\''+camiones[i].id+'\')"><i class="ti ti-trash"></i></button></div>';
+    html += '<span><strong>'+maquinarias[i].id+'</strong> - '+maquinarias[i].modelo+'</span>';
+    html += '<button class="bd" onclick="delCamion(\''+maquinarias[i].id+'\')"><i class="ti ti-trash"></i></button></div>';
   }
-  document.getElementById('lista-camiones').innerHTML = html;
+  document.getElementById('lista-maquinarias').innerHTML = html;
   var html2 = '';
   for (var i = 0; i < choferes.length; i++) {
     html2 += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #EEF4FF;font-size:14px">';
@@ -922,11 +931,11 @@ async function addCamion() {
     saveRes(resData);
     document.getElementById('nc-id').value = '';
     document.getElementById('nc-mod').value = '';
-    await loadCamiones(); loadConfig();
+    await loadmaquinarias(); loadConfig();
     showMsg('ok-msg','ok','Sin conexion. Camion guardado localmente.');
     return;
   }
-  var r = await sb.from('camiones').insert([data]);
+  var r = await sb.from('maquinarias').insert([data]);
   if (r.error) {
     if (r.error.message && r.error.message.indexOf('Failed to fetch') >= 0) {
       addOfflineOp({type:'insert_camion', data:data, timestamp:Date.now()});
@@ -934,7 +943,7 @@ async function addCamion() {
       saveRes(resData);
       document.getElementById('nc-id').value = '';
       document.getElementById('nc-mod').value = '';
-      await loadCamiones(); loadConfig();
+      await loadmaquinarias(); loadConfig();
       showMsg('ok-msg','ok','Sin conexion. Camion guardado localmente.');
       return;
     }
@@ -944,7 +953,7 @@ async function addCamion() {
   saveRes(resData);
   document.getElementById('nc-id').value = '';
   document.getElementById('nc-mod').value = '';
-  await loadCamiones(); loadConfig();
+  await loadmaquinarias(); loadConfig();
 }
 async function addChofer() {
   var nom = document.getElementById('nc-cho').value.trim();
@@ -977,14 +986,14 @@ async function delCamion(id) {
       addOfflineOp({type:'delete_camion', data:id, timestamp:Date.now()});
       resData = resData.filter(function(c){return c.id!==id;});
       saveRes(resData);
-      await loadCamiones(); loadConfig();
+      await loadmaquinarias(); loadConfig();
       showMsg('ok-msg','ok','Sin conexion. Camion eliminado localmente.');
       return;
     }
-    await sb.from('camiones').delete().eq('id',id);
+    await sb.from('maquinarias').delete().eq('id',id);
     resData = resData.filter(function(c){return c.id!==id;});
     saveRes(resData);
-    await loadCamiones(); loadConfig();
+    await loadmaquinarias(); loadConfig();
   }
 async function delChofer(id) {
   if (!confirm('Eliminar este chofer?')) return;
@@ -1093,7 +1102,7 @@ async function delChofer(id) {
     XLSX.utils.book_append_sheet(wb, wsVenc, 'Vencimientos');
 
     /* HOJAS POR CAMION */
-    var todosIds = []; for (var i=0;i<camiones.length;i++) todosIds.push(camiones[i].id);
+    var todosIds = []; for (var i=0;i<maquinarias.length;i++) todosIds.push(maquinarias[i].id);
     var sinCamion = [];
     for (var i=0;i<reps.length;i++) { if (todosIds.indexOf(reps[i].camion)===-1 && sinCamion.indexOf(reps[i].camion)===-1) sinCamion.push(reps[i].camion); }
     var allIds = todosIds.concat(sinCamion);
@@ -1351,6 +1360,48 @@ async function importGPS(input) {
   input.value = '';
 }
 
+async function importMaquinas(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var statusEl = document.getElementById('maq-status');
+  if (!statusEl) return;
+  statusEl.innerHTML = '<i class="ti ti-loader"></i> Procesando Excel de máquinas...';
+  try {
+    var data = await file.arrayBuffer();
+    var wb = XLSX.read(data, {type:'array'});
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if (!rows || rows.length < 2) { statusEl.innerHTML = '<i class="ti ti-alert-circle" style="color:var(--red)"></i> El archivo está vacío o no tiene datos.'; return; }
+    var nuevos = 0;
+    var existentes = 0;
+    var errores = 0;
+    for (var i=1; i<rows.length; i++) {
+      var row = rows[i];
+      if (!row || !row.length) continue;
+      var id = (row[0] || '').toString().trim().toUpperCase();
+      var nom = (row[1] || '').toString().trim().toUpperCase();
+      var marca = (row[2] || '').toString().trim() || '---';
+      var modelo = (row[3] || '').toString().trim() || '---';
+      if (!id || !nom) { errores++; continue; }
+      var existe = false;
+      for (var j=0; j<resData.length; j++) { if (resData[j].id === id) { existe = true; break; } }
+      if (existe) { existentes++; continue; }
+      resData.push({id:id,nom:nom,pat:id,cho:'---',cap:'---',est:'DISPONIBLE',seg:'---',rto:'---',us:'---',ps:'---',ue:'---',pe:'---',uc:'---',pc:'---',ub:'---',pb:'---'});
+      if (sb && isOnline) {
+        await sb.from('maquinarias').insert([{id:id,modelo:nom,marca:marca,modelo_equipo:modelo}]).catch(function(){});
+      }
+      nuevos++;
+    }
+    saveRes(resData);
+    await loadmaquinarias();
+    statusEl.innerHTML = '<i class="ti ti-check" style="color:var(--grn)"></i> Importados: '+nuevos+' | Ya existían: '+existentes+' | Errores: '+errores;
+    setTimeout(function(){ if (statusEl) statusEl.innerHTML = ''; }, 6000);
+  } catch(e) {
+    statusEl.innerHTML = '<i class="ti ti-alert-circle" style="color:var(--red)"></i> Error: '+e.message;
+  }
+  input.value = '';
+}
+
 renderFlota();
 
 async function renderGPSDash() {
@@ -1397,7 +1448,7 @@ async function renderGPSDash() {
     html += '<th class="km-mes-col">Mes</th></tr></thead><tbody>';
     for (var c=0; c<resData.length; c++) {
       var cam = resData[c];
-      if (!camionVisible(cam)) continue;
+      if (!maquinariaVisible(cam)) continue;
       var d = porCamion[cam.id] || {semana:[0,0,0,0,0,0,0],mes:0};
       var rowBg = cam.est==='REPARACION' ? 'km-reparacion' : '';
       html += '<tr class="'+rowBg+'" onclick="abrirDetalle(\''+cam.id+'\')">';
@@ -1410,7 +1461,7 @@ async function renderGPSDash() {
     }
     var idsPendientes = [];
     if (porCamion && typeof porCamion === 'object') {
-      idsPendientes = Object.keys(porCamion).filter(function(id) { return !resData.some(function(c){ return c.id===id && camionVisible(c); }); });
+      idsPendientes = Object.keys(porCamion).filter(function(id) { return !resData.some(function(c){ return c.id===id && maquinariaVisible(c); }); });
     }
     for (var p=0; p<idsPendientes.length; p++) {
       var pid = idsPendientes[p];
@@ -1434,3 +1485,7 @@ async function renderGPSDash() {
 }
 
 init();
+
+
+
+
