@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3 Monteverdi Cubico</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚛</text></svg>">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="hdr noprint">
+  <img src="metro cubico.png" class="hdr-logo" style="width:42px;height:42px;object-fit:contain">
+  <div>
+    <div class="htit" style="font-size:22px;letter-spacing:.5px">WorkFlot</div>
+    <div class="hsub" id="hdr-sub">M3 Monteverdi Cubico</div>
+  </div>
+  <div id="online-badge" class="online-badge on" style="margin-left:auto"><i class="ti ti-wifi"></i> En línea</div>
+</div>
+<div class="tabs noprint">
+   <button class="tab on" onclick="showTab('flota',this)"><i class="ti ti-truck"></i>Flota</button>
+   <button class="tab" onclick="showTab('nuevo',this)"><i class="ti ti-circle-plus"></i>Reportar</button>
+   <button class="tab" onclick="showTab('reparaciones',this)"><i class="ti ti-tool"></i>Reparar</button>
+    <button class="tab" onclick="showTab('historial',this)"><i class="ti ti-history"></i>Historial</button>
+   <button class="tab" onclick="askKey(this)"><i class="ti ti-settings"></i>Config</button>
+ </div>
+
+<div class="pane on" id="pane-flota">
+  <div class="search-box">
+    <i class="ti ti-search"></i>
+    <input type="text" id="search-flota" placeholder="Buscar camion, chofer o modelo..." oninput="renderFlota()">
+  </div>
+  <div class="flota-grid" id="flota-grid"><div class="loader">Cargando...</div></div>
+</div>
+
+<div class="pane" id="pane-detalle">
+  <button class="bo noprint" onclick="goToFlota()" style="margin-bottom:12px"><i class="ti ti-arrow-left"></i> Volver a flota</button>
+  <div id="detalle-cont"><div class="loader">Cargando...</div></div>
+</div>
+
+<div class="pane" id="pane-nuevo">
+  <div class="msg mok" id="ok-msg" style="display:none"><i class="ti ti-check"></i><span></span></div>
+  <div class="msg merr" id="err-msg" style="display:none"><i class="ti ti-alert-circle"></i><span></span></div>
+  <div id="qp-step1">
+    <div class="card">
+      <p style="font-size:15px;font-weight:800;margin-bottom:14px;text-align:center">Que ocurrio?</p>
+      <div class="qpick-grid">
+        <div class="qpick qp-falla" onclick="pickTipo('falla')"><i class="ti ti-alert-triangle"></i><div class="qpick-lbl">Falla</div></div>
+        <div class="qpick qp-prev" onclick="pickTipo('preventivo')"><i class="ti ti-shield-check"></i><div class="qpick-lbl">Preventivo</div></div>
+        <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-tool"></i><div class="qpick-lbl">Service</div></div>
+        <div class="qpick qp-engr" onclick="pickTipo('engrase')"><i class="ti ti-droplet"></i><div class="qpick-lbl">Engrase</div></div>
+        <div class="qpick qp-neum" onclick="pickTipo('neumatico')"><i class="ti ti-circle-dot"></i><div class="qpick-lbl">Neumáticos</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="qp-step2" class="hid">
+    <div class="card">
+      <div class="rt" style="margin-bottom:14px">
+        <p id="qp-tipo-tit" style="font-size:15px;font-weight:800"></p>
+        <button class="bo" onclick="qpBack()" style="font-size:11px;padding:5px 10px"><i class="ti ti-arrow-left"></i> Cambiar</button>
+      </div>
+      <div class="field"><label><i class="ti ti-truck"></i> Camion *</label><select id="r-cam"></select></div>
+      <div class="field"><label><i class="ti ti-user"></i> Chofer *</label><select id="r-cho"></select></div>
+      <div class="g2">
+        <div class="field"><label><i class="ti ti-speedboat"></i> Km actuales</label><input type="number" id="r-km" placeholder="ej: 187500"></div>
+        <div class="field"><label><i class="ti ti-calendar"></i> Fecha</label><input type="date" id="r-fec"></div>
+      </div>
+      <div class="field"><label><i class="ti ti-notes"></i> Descripcion *</label><textarea id="r-des" placeholder="Describe el problema o trabajo..."></textarea></div>
+      <div id="falla-extra" class="hid">
+        <div class="g2">
+          <div class="field"><label><i class="ti ti-alert-triangle"></i> Urgencia</label>
+            <select id="r-urg">
+              <option value="alta">Alta - no circula</option>
+              <option value="media">Media - con cuidado</option>
+              <option value="baja">Baja - esta semana</option>
+            </select>
+          </div>
+          <div class="field"><label><i class="ti ti-package"></i> Repuestos estimados</label><input type="text" id="r-rep" placeholder="ej: filtro, correa"></div>
+        </div>
+      </div>
+      <button class="bp noprint" onclick="guardar()"><i class="ti ti-send"></i> Enviar reporte</button>
+    </div>
+  </div>
+  <div id="ot-area"></div>
+</div>
+
+<div class="pane" id="pane-reparaciones">
+  <div class="msg mok" id="ok-rep" style="display:none"><i class="ti ti-check"></i><span></span></div>
+  <div class="msg merr" id="err-rep" style="display:none"><i class="ti ti-alert-circle"></i><span></span></div>
+  <div class="card" id="buscador-ot">
+    <p style="font-size:14px;font-weight:800;margin-bottom:10px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-tool"></i> Registrar reparacion</p>
+    <div class="field"><label>Filtrar por camion</label>
+      <select id="fil-ot-cam" onchange="loadOTs()"></select>
+    </div>
+    <div id="lista-ots"><div class="loader">Cargando OTs...</div></div>
+  </div>
+  <div id="form-rep" class="hid">
+    <div class="card" id="falla-sel"></div>
+    <div class="card">
+      <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-hammer"></i> Trabajos del mecanico</p>
+      <div class="field"><label><i class="ti ti-building-factory-2"></i> Taller / Mecanico</label><input type="text" id="rep-tal" placeholder="ej: Taller Barone"></div>
+      <div class="field"><label><i class="ti ti-list-check"></i> Trabajos realizados *</label><textarea id="rep-tra" placeholder="Describe que se hizo..."></textarea></div>
+      <div class="field"><label><i class="ti ti-package"></i> Repuestos usados</label><textarea id="rep-rep" placeholder="ej: Filtro de aceite..." style="min-height:60px"></textarea></div>
+      <div class="g2">
+        <div class="field"><label><i class="ti ti-calendar-check"></i> Fecha entrega</label><input type="date" id="rep-fec"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button class="bp" onclick="saveRep()" style="flex:1"><i class="ti ti-device-floppy"></i> Guardar reparacion</button>
+        <button class="bo" onclick="cancelRep()"><i class="ti ti-x"></i> Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <p style="font-size:14px;font-weight:800;margin-bottom:10px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-list"></i> Reparaciones registradas</p>
+    <div id="lista-reps"><div class="loader">Cargando...</div></div>
+  </div>
+</div>
+
+<div class="pane" id="pane-historial">
+   <div class="card" style="padding:10px">
+     <select id="fil-cam" onchange="loadHist()" style="font-size:14px;width:100%;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px;margin-bottom:8px"></select>
+     <input type="text" id="fil-text" placeholder="Buscar palabra en descripcion (ej: correa, filtro)..." oninput="loadHist()" style="font-size:14px;width:100%;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+   </div>
+   <div class="card" id="tabla-hist"><div class="loader">Cargando...</div></div>
+ </div>
+
+  <div class="pane" id="pane-dash">
+    <div class="card card-blue" style="margin-bottom:12px">
+      <p style="font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px"><i class="ti ti-map"></i> Cargar viajes GPS (PowerFleet)</p>
+      <p style="font-size:12px;opacity:.8;margin-top:4px;margin-bottom:12px">Subí el Excel de TripsInformationSummary para ver los km por camión.</p>
+      <input type="file" id="gps-file" accept=".xlsx,.xls" style="display:none" onchange="importGPS(this)">
+      <button class="bp" onclick="document.getElementById('gps-file').click()" style="background:rgba(255,255,255,.2);box-shadow:none;border:2px solid rgba(255,255,255,.5)"><i class="ti ti-upload"></i> Subir Excel GPS</button>
+      <div id="gps-status" style="margin-top:8px;font-size:12px"></div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <p class="dash-sec-tit"><i class="ti ti-gauge"></i> Kilómetros por camión</p>
+      <div id="d-km-table" style="min-height:60px"></div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <p class="dash-sec-tit"><i class="ti ti-history"></i> Última actividad</p>
+      <div id="d-activ"></div>
+    </div>
+    <div class="card card-blue" style="margin-bottom:12px">
+      <p style="font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px"><i class="ti ti-mail"></i> Notificaciones Email</p>
+      <p style="font-size:12px;opacity:.8;margin-top:4px;margin-bottom:12px">Enviar alertas de vencimientos a m3.monteverdi@gmail.com</p>
+      <button class="bp" onclick="enviarAlertasEmail()" style="background:rgba(255,255,255,.2);box-shadow:none;border:2px solid rgba(255,255,255,.5)"><i class="ti ti-send"></i> Enviar Alertas</button>
+    </div>
+  </div>
+
+  <div class="pane" id="pane-config">
+   <div class="card card-blue" style="margin-bottom:12px">
+     <p style="font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px"><i class="ti ti-file-report"></i> Generar informe</p>
+    <p style="font-size:12px;opacity:.8;margin-top:4px;margin-bottom:12px">Excel completo: resumen general, una hoja por camion, OT abiertas y cerradas, servicios y vencimientos.</p>
+    <button class="bp" id="btn-export" onclick="exportExcel()" style="background:rgba(255,255,255,.2);box-shadow:none;border:2px solid rgba(255,255,255,.5)"><i class="ti ti-file-spreadsheet"></i> Generar informe Excel</button>
+  </div>
+  <div class="card">
+    <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-truck"></i> Camiones</p>
+    <div id="lista-camiones" style="margin-bottom:12px"></div>
+    <div class="g2" style="margin-bottom:8px">
+      <input type="text" id="nc-id" placeholder="Codigo (ej: 115)" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+      <input type="text" id="nc-mod" placeholder="Modelo" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+    </div>
+    <button class="bo" onclick="addCamion()" style="width:100%"><i class="ti ti-plus"></i> Agregar camion</button>
+  </div>
+  <div class="card">
+    <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-users"></i> Choferes</p>
+    <div id="lista-choferes" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="nc-cho" placeholder="Nombre del chofer" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px;flex:1">
+      <button class="bo" onclick="addChofer()"><i class="ti ti-plus"></i> Agregar</button>
+    </div>
+  </div>
+  <div class="card">
+    <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-data"></i> Datos de la flota</p>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">Toca un camion en la pestana Flota y despues Editar para modificar RTO, seguro, cubiertas y bateria.</p>
+  </div>
+</div>
+
+<div id="qr-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center">
+  <div class="card" style="max-width:380px;width:92%;text-align:center;position:relative">
+    <button class="bo" onclick="closeQR()" style="position:absolute;top:10px;right:10px;padding:4px 8px;font-size:11px"><i class="ti ti-x"></i></button>
+    <img src="metro cubico.png" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px">
+    <p style="font-size:16px;font-weight:800;margin-bottom:4px;color:var(--az)">Escanear para reportar</p>
+    <p id="qr-cam-id" style="font-size:13px;color:#888;font-weight:600;margin-bottom:12px"></p>
+    <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:14px;background:#fff;padding:18px;border-radius:14px;border:2px solid var(--border)"></div>
+    <p style="font-size:11px;color:#888;margin-bottom:12px">Imprime este codigo y pegalo en la unidad</p>
+    <button class="bp" onclick="printQR()" style="max-width:240px;margin:0 auto"><i class="ti ti-printer"></i> Imprimir QR</button>
+  </div>
+</div>
+<div id="qr-print-area" style="display:none"></div>
+
+<div id="edit-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center">
+  <div class="card" style="max-width:420px;width:92%;text-align:left;position:relative">
+    <button class="bo" onclick="closeEdit()" style="position:absolute;top:10px;right:10px;padding:4px 8px;font-size:11px"><i class="ti ti-x"></i></button>
+    <p style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--az)">Editar datos del camion</p>
+    <div id="edit-form"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="bp" onclick="saveEditCamion()" style="flex:1"><i class="ti ti-device-floppy"></i> Guardar</button>
+      <button class="bo" onclick="closeEdit()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/qrcode/build/qrcode.min.js" defer></script>
+<script src="js/app.js?v=9" defer></script>
+</body>
+</html>
