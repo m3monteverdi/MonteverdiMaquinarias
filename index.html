@@ -55,7 +55,9 @@
         <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-tool"></i><div class="qpick-lbl">Service</div></div>
         <div class="qpick qp-engr" onclick="pickTipo('engrase')"><i class="ti ti-droplet"></i><div class="qpick-lbl">Engrase</div></div>
         <div class="qpick qp-neum" onclick="pickTipo('neumatico')"><i class="ti ti-circle-dot"></i><div class="qpick-lbl">Neumáticos</div></div>
-        <div class="qpick qp-comp" onclick="pickTipo('componentes')"><i class="ti ti-wrench"></i><div class="qpick-lbl">Componentes/Desgaste</div></div>
+        <div class="qpick qp-acc" onclick="pickTipo('accesorios')"><i class="ti ti-wrench"></i><div class="qpick-lbl">Accesorios</div></div>
+        <div class="qpick qp-comb" onclick="pickTipo('combustible')"><i class="ti ti-droplet"></i><div class="qpick-lbl">Combustible</div></div>
+        <div class="qpick qp-ace" onclick="pickTipo('aceites')"><i class="ti ti-flask"></i><div class="qpick-lbl">Aceites</div></div>
       </div>
     </div>
   </div>
@@ -82,6 +84,38 @@
             </select>
           </div>
           <div class="field"><label><i class="ti ti-package"></i> Repuestos estimados</label><input type="text" id="r-rep" placeholder="ej: filtro, correa"></div>
+        </div>
+      </div>
+      <div id="campos-combustible" class="hid">
+        <div class="g2">
+          <div class="field"><label><i class="ti ti-clock"></i> Horas</label><input type="number" id="r-horas-comb" placeholder="ej: 1250"></div>
+          <div class="field"><label><i class="ti ti-droplet"></i> Litros cargados</label><input type="number" id="r-litros" placeholder="ej: 150"></div>
+        </div>
+      </div>
+      <div id="campos-aceites" class="hid">
+        <div class="g2">
+          <div class="field"><label><i class="ti ti-clock"></i> Horas</label><input type="number" id="r-horas-aceite" placeholder="ej: 1250"></div>
+          <div class="field"><label><i class="ti ti-droplet"></i> Litros</label><input type="number" id="r-litros-aceite" placeholder="ej: 20"></div>
+        </div>
+        <div class="field"><label><i class="ti ti-flask"></i> Tipo de aceite</label><input type="text" id="r-tipo-aceite" placeholder="ej: SAE 15W40, Hidráulico 68"></div>
+      </div>
+      <div id="campos-accesorios" class="hid">
+        <div class="g2">
+          <div class="field"><label><i class="ti ti-alert-triangle"></i> Rotura / Reemplazo</label>
+            <select id="r-rotura">
+              <option value="">Seleccionar...</option>
+              <option value="Vidrio">Vidrio</option>
+              <option value="Brazo">Brazo</option>
+              <option value="Pala">Pala</option>
+              <option value="Aguilón">Aguilón</option>
+              <option value="Extensible">Extensible</option>
+              <option value="Cadenas">Cadenas</option>
+              <option value="Orugas">Orugas</option>
+              <option value="Rueda">Rueda</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="field"><label><i class="ti ti-clock"></i> Horas de uso</label><input type="number" id="r-horas-acc" placeholder="ej: 2100"></div>
         </div>
       </div>
       <button class="bp noprint" onclick="guardar()"><i class="ti ti-send"></i> Enviar reporte</button>

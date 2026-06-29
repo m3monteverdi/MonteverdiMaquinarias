@@ -240,9 +240,9 @@ function showMsg(id, type, txt) {
 }
 
 function tbadge(t) {
-  var m = {falla:'bred',service:'bamb',reparacion:'bpur',preventivo:'bgrn',engrase:'bblu',neumatico:'borg',componentes:'borange'};
-  var l = {falla:'Falla',service:'Service',reparacion:'Reparacion',preventivo:'Preventivo',engrase:'Engrase',neumatico:'Neumatico',componentes:'Componentes'};
-  var icons = {falla:'ti-alert-triangle',service:'ti-tool',reparacion:'ti-hammer',preventivo:'ti-shield-check',engrase:'ti-droplet',neumatico:'ti-circle-dot',componentes:'ti-wrench'};
+  var m = {falla:'bred',service:'bamb',reparacion:'bpur',preventivo:'bgrn',engrase:'bblu',neumatico:'borg',accesorios:'borange',combustible:'bblue',aceites:'byellow'};
+  var l = {falla:'Falla',service:'Service',reparacion:'Reparacion',preventivo:'Preventivo',engrase:'Engrase',neumatico:'Neumatico',accesorios:'Accesorio',combustible:'Combustible',aceites:'Aceite'};
+  var icons = {falla:'ti-alert-triangle',service:'ti-tool',reparacion:'ti-hammer',preventivo:'ti-shield-check',engrase:'ti-droplet',neumatico:'ti-circle-dot',accesorios:'ti-wrench',combustible:'ti-droplet',aceites:'ti-flask'};
   return '<span class="badge '+(m[t]||'bgry')+'"><i class="ti '+(icons[t]||'ti-tag')+'"></i>'+(l[t]||t)+'</span>';
 }
 function fmtP(n) { if (!n || n === 0) return '-'; return '$'+Math.round(n).toLocaleString('es-AR'); }
@@ -375,22 +375,17 @@ function getAlertPriority(c) {
 }
 
 function getGrupoMaquina(id) {
-  var retro = ['RE 01','RE 02','RE 03','RE 04','RO 01'];
-  var haulotte = ['MA 01','MA 02','MA 03'];
-  var gruas = ['GT 01','GT 02','GT 03','GT 04','GM 01','GM 02','GM 03'];
-  var cargadoras = ['CF 02'];
-  var compactadores = ['CO 01','CO 02','CO 03'];
-  var tijera = ['TI 01'];
-  if (retro.indexOf(id) >= 0) return 'Retroexcavadoras';
-  if (haulotte.indexOf(id) >= 0) return 'Haulottes';
-  if (gruas.indexOf(id) >= 0) return 'Grúas';
-  if (cargadoras.indexOf(id) >= 0) return 'Cargadoras';
-  if (compactadores.indexOf(id) >= 0) return 'Compactadores';
-  if (tijera.indexOf(id) >= 0) return 'Tijera';
-  if (id.indexOf('MA') === 0) return 'Skay Track';
-  if (id.indexOf('ME') === 0) return 'Excavadoras';
-  if (id.indexOf('CP') === 0) return 'Compresores';
-  if (id.indexOf('GE') === 0) return 'Generadores';
+  var pref = id.split(' ')[0];
+  if (pref === 'RE') return 'Retroexcavadoras';
+  if (pref === 'CO') return 'Compactadores';
+  if (pref === 'MA') return 'Manipuladores';
+  if (pref === 'CF') return 'Cargadoras';
+  if (pref === 'GT' || pref === 'GM') return 'Grúas';
+  if (pref === 'TI') return 'Tijera';
+  if (pref === 'CP') return 'Compresores';
+  if (pref === 'GE') return 'Generadores';
+  if (pref === 'RO') return 'Excavadoras';
+  if (pref === 'ME') return 'Mini Excavadoras';
   return 'Otros';
 }
 
@@ -615,11 +610,14 @@ function qpReset() {
 
 function pickTipo(t) {
   tipoActual = t;
-  var labels = {falla:'Reportar Falla',preventivo:'Reportar Preventivo',service:'Reportar Service',engrase:'Reportar Engrase',neumatico:'Reportar Neumáticos',componentes:'Reportar Componentes/Desgaste'};
+  var labels = {falla:'Reportar Falla',preventivo:'Reportar Preventivo',service:'Reportar Service',engrase:'Reportar Engrase',neumatico:'Reportar Neumáticos',accesorios:'Reportar Accesorios',combustible:'Reportar Combustible',aceites:'Reportar Aceites'};
   document.getElementById('qp-tipo-tit').textContent = labels[t];
   document.getElementById('qp-step1').classList.add('hid');
   document.getElementById('qp-step2').classList.remove('hid');
   document.getElementById('falla-extra').classList.toggle('hid', t !== 'falla');
+  document.getElementById('campos-combustible').classList.toggle('hid', t !== 'combustible');
+  document.getElementById('campos-aceites').classList.toggle('hid', t !== 'aceites');
+  document.getElementById('campos-accesorios').classList.toggle('hid', t !== 'accesorios');
 }
 
 function qpBack() {
@@ -636,7 +634,29 @@ async function guardar() {
   var urg = document.getElementById('r-urg').value;
   var rep = document.getElementById('r-rep').value.trim();
   var fec = document.getElementById('r-fec').value;
-  if (!cam || !cho || !tip || !des) { showMsg('err-msg','err','Completa camion, chofer y descripcion.'); return; }
+  var extra = '';
+  if (tip === 'combustible') {
+    var horasComb = document.getElementById('r-horas-comb').value;
+    var litros = document.getElementById('r-litros').value;
+    if (horasComb) extra += 'Horas: '+horasComb+' | ';
+    if (litros) extra += 'Litros: '+litros+' | ';
+  }
+  if (tip === 'aceites') {
+    var horasAceite = document.getElementById('r-horas-aceite').value;
+    var litrosAceite = document.getElementById('r-litros-aceite').value;
+    var tipoAceite = document.getElementById('r-tipo-aceite').value.trim();
+    if (horasAceite) extra += 'Horas: '+horasAceite+' | ';
+    if (litrosAceite) extra += 'Litros: '+litrosAceite+' | ';
+    if (tipoAceite) extra += 'Tipo: '+tipoAceite+' | ';
+  }
+  if (tip === 'accesorios') {
+    var rotura = document.getElementById('r-rotura').value;
+    var horasAcc = document.getElementById('r-horas-acc').value;
+    if (rotura) extra += 'Rotura: '+rotura+' | ';
+    if (horasAcc) extra += 'Horas: '+horasAcc+' | ';
+  }
+  if (extra) des = extra + ' | ' + des;
+  if (!cam || !cho || !tip || !des) { showMsg('err-msg','err','Completa maquina, chofer y descripcion.'); return; }
   var esOT = (tip === 'falla');
   var id = esOT ? 'OT-'+String(otCounter).padStart(3,'0') : 'REP-'+Date.now();
   if (esOT) otCounter++;
@@ -671,6 +691,13 @@ async function guardar() {
   document.getElementById('r-des').value = '';
   document.getElementById('r-rep').value = '';
   document.getElementById('r-km').value = '';
+  document.getElementById('r-horas-comb').value = '';
+  document.getElementById('r-litros').value = '';
+  document.getElementById('r-horas-aceite').value = '';
+  document.getElementById('r-litros-aceite').value = '';
+  document.getElementById('r-tipo-aceite').value = '';
+  document.getElementById('r-rotura').value = '';
+  document.getElementById('r-horas-acc').value = '';
   document.getElementById('r-cam').selectedIndex = 0;
   document.getElementById('r-cho').selectedIndex = 0;
   document.getElementById('r-fec').value = new Date().toISOString().split('T')[0];
