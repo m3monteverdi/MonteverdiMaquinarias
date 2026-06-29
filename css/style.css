@@ -5,46 +5,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --primary: #F59E0B;
-  --primary-dark: #B45309;
+  --primary: #FBBF24;
+  --primary-dark: #92400E;
   --primary-light: #FEF3C7;
   --bg: #FFFFFF;
   --surf: #FFFFFF;
   --border: #E5E7EB;
   --text: #111827;
   --muted: #4B5563;
-  --shadow: 0 4px 6px rgba(0,0,0,0.07);
-  --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
-  --az:     hsl(220, 80%, 48%);
-  --azd:    hsl(220, 80%, 36%);
-  --azl:    hsl(220, 80%, 96%);
-  --azm:    hsl(220, 40%, 82%);
-  --az2: #9333EA;
-
-  --red: #DC2626;
-  --redl: #FEF2F2;
-  --grn: #16A34A;
-  --grnl: #F0FDF4;
-  --amb: #D97706;
-  --ambl: #FFFBEB;
-  --org: #EA580C;
-  --orgl: #FFF7ED;
-
-  --bg:     hsl(220, 30%, 97%);
-  --surf:   hsl(0, 0%, 100%);
-  --border: hsl(220, 20%, 90%);
-  --text:   hsl(220, 20%, 15%);
-  --muted:  hsl(220, 10%, 55%);
-
   --radius-sm: 8px;
-  --radius:    14px;
+  --radius: 14px;
   --radius-lg: 20px;
-
   --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow:    0 4px 16px rgba(30,60,180,.08), 0 1px 4px rgba(0,0,0,.05);
-  --shadow-lg: 0 8px 32px rgba(30,60,180,.13), 0 2px 8px rgba(0,0,0,.06);
-  --shadow-az: 0 4px 16px rgba(30,90,220,.28);
-
+  --shadow: 0 4px 16px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.05);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
   --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --transition: 0.18s cubic-bezier(.4,0,.2,1);
 }
@@ -161,7 +135,7 @@ body {
 
 .tab i { font-size: 19px; margin-bottom: 1px; }
 
-.tab.on { color: #F59E0B; border-bottom-color: #F59E0B; }
+.tab.on { color: #FBBF24; border-bottom-color: #FBBF24; }
 
 .tab:active { opacity: .7; }
 
@@ -833,7 +807,7 @@ body {
 .qp-serv  { background: var(--primary-light);  border-color: #F3F4F6; color: var(--primary); }
 .qp-engr  { background: hsl(250,70%,96%); border-color: hsl(250,70%,84%); color: var(--az2); }
 .qp-neum { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%); border-color: #16A34A; }
-.qp-comp { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); border-color: #D97706; }
+.qp-comp { background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-color: #D97706; }
 
 /* =============================================
    DETALLE CARD - rc-item mini stats
@@ -895,6 +869,9 @@ body {
   #qr-modal { display: flex !important; }
   #qr-print-area { display: flex !important; justify-content: center; padding: 20px; }
 }
+
+
+
 
 
 

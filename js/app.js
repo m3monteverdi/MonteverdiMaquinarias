@@ -374,6 +374,26 @@ function getAlertPriority(c) {
   return { hasUrgent: hasUrgent, hasVencimiento: hasVencimiento };
 }
 
+function getGrupoMaquina(id) {
+  var retro = ['RE 01','RE 02','RE 03','RE 04','RO 01'];
+  var haulotte = ['MA 01','MA 02','MA 03'];
+  var gruas = ['GT 01','GT 02','GT 03','GT 04','GM 01','GM 02','GM 03'];
+  var cargadoras = ['CF 02'];
+  var compactadores = ['CO 01','CO 02','CO 03'];
+  var tijera = ['TI 01'];
+  if (retro.indexOf(id) >= 0) return 'Retroexcavadoras';
+  if (haulotte.indexOf(id) >= 0) return 'Haulottes';
+  if (gruas.indexOf(id) >= 0) return 'Grúas';
+  if (cargadoras.indexOf(id) >= 0) return 'Cargadoras';
+  if (compactadores.indexOf(id) >= 0) return 'Compactadores';
+  if (tijera.indexOf(id) >= 0) return 'Tijera';
+  if (id.indexOf('MA') === 0) return 'Skay Track';
+  if (id.indexOf('ME') === 0) return 'Excavadoras';
+  if (id.indexOf('CP') === 0) return 'Compresores';
+  if (id.indexOf('GE') === 0) return 'Generadores';
+  return 'Otros';
+}
+
 function renderFlota() {
   try {
   var q = (document.getElementById('search-flota').value || '').toLowerCase().trim();
@@ -397,39 +417,53 @@ function renderFlota() {
     if (a.id.toLowerCase() > b.id.toLowerCase()) return 1;
     return 0;
   });
-  if (!filtrados.length) { el.innerHTML = '<p style="color:#888;font-size:13px;text-align:center;padding:2rem;grid-column:1/-1">Sin resultados.</p>'; return; }
+  var gruposOrden = ['Cargadoras','Excavadoras','Haulottes','Retroexcavadoras','Compactadores','Grúas','Tijera','Skay Track','Compresores','Generadores','Otros'];
+  var grupos = {};
+  var grupoKeys = [];
+  for (var gi=0; gi<gruposOrden.length; gi++) grupos[gruposOrden[gi]] = [];
+  for (var fi=0; fi<filtrados.length; fi++) {
+    var g = getGrupoMaquina(filtrados[fi].id);
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(filtrados[fi]);
+    if (grupoKeys.indexOf(g) < 0) grupoKeys.push(g);
+  }
+  grupoKeys.sort(function(a,b){ return gruposOrden.indexOf(a) - gruposOrden.indexOf(b); });
   var maxVisible = 18;
-  var limit = flotaExpandida ? filtrados.length : Math.min(maxVisible, filtrados.length);
+  var contador = 0;
   var html = '';
-  for (var i=0;i<limit;i++) {
-    var c = filtrados[i];
-    var claseFondo = c.est === 'REPARACION' ? 'ftc-rep' : 'ftc-op';
-    var badgeTxt = c.est === 'REPARACION' ? 'EN REPARACION' : 'OPERATIVO';
-    var badgeClass = c.est === 'REPARACION' ? 'bred' : 'bgrn';
-
-    var alertaTxt = '';
-    var dRto = diasHasta(c.rto);
-    var dSeg = diasHasta(c.seg);
-    if (dRto !== null && dRto < 30) alertaTxt = 'RTO vence pronto';
-    else if (dSeg !== null && dSeg < 30) alertaTxt = 'Seguro vence pronto';
-
-    var ultRep = allReportes.filter(function(r){return r.camion===c.id && r.tipo==='falla';})[0];
-    html += '<div class="ftc '+claseFondo+'" onclick="abrirDetalle(\''+c.id+'\')">';
-    if (adminOk) {
-      html += '<button class="bo" onclick="event.stopPropagation();openEdit(\''+c.id+'\')" style="position:absolute;bottom:10px;right:10px;font-size:9px;padding:4px 8px;background:var(--az);color:#fff;border:none;border-radius:6px;cursor:pointer"><i class="ti ti-pencil"></i></button>';
+  for (var gk=0; gk<grupoKeys.length; gk++) {
+    var grupo = grupos[grupoKeys[gk]];
+    if (!grupo.length) continue;
+    html += '<div style="grid-column:1/-1;background:#FDE68A;color:#78350F;font-weight:800;font-size:13px;padding:8px 14px;border-radius:999px;margin-top:10px;text-transform:uppercase;letter-spacing:.05em"><i class=\"ti ti-category\"></i> '+grupoKeys[gk]+' ('+grupo.length+')</div>';
+    for (var mi=0; mi<grupo.length; mi++) {
+      if (contador >= maxVisible && !flotaExpandida) break;
+      var c = grupo[mi];
+      var claseFondo = c.est === 'REPARACION' ? 'ftc-rep' : 'ftc-op';
+      var badgeTxt = c.est === 'REPARACION' ? 'EN REPARACION' : 'OPERATIVO';
+      var badgeClass = c.est === 'REPARACION' ? 'bred' : 'bgrn';
+      var alertaTxt = '';
+      var dRto = diasHasta(c.rto);
+      var dSeg = diasHasta(c.seg);
+      if (dRto !== null && dRto < 30) alertaTxt = 'RTO vence pronto';
+      else if (dSeg !== null && dSeg < 30) alertaTxt = 'Seguro vence pronto';
+      var ultRep = allReportes.filter(function(r){return r.camion===c.id && r.tipo==='falla';})[0];
+      html += '<div class="ftc '+claseFondo+'" onclick="abrirDetalle(\''+c.id+'\')">';
+      if (adminOk) {
+        html += '<button class="bo" onclick="event.stopPropagation();openEdit(\''+c.id+'\')" style="position:absolute;bottom:10px;right:10px;font-size:9px;padding:4px 8px;background:var(--az);color:#fff;border:none;border-radius:6px;cursor:pointer"><i class="ti ti-pencil"></i></button>';
+      }
+      html += '<span class="badge '+badgeClass+'" style="position:absolute;top:10px;right:10px;font-size:9px">'+badgeTxt+'</span>';
+      html += '<div class="ftc-id">'+c.id+'</div>';
+      html += '<div class="ftc-mod">'+(c.nom||c.id)+'</div>';
+      if (c.cho !== '---') html += '<div class=\"ftc-info\"><i class=\"ti ti-user\"></i> '+c.cho+'</div>';
+      if (c.ps && c.ps !== '---') html += '<div class=\"ftc-info\"><i class=\"ti ti-tool\"></i> Prox. service: '+c.ps+'</div>';
+      if (ultRep) html += '<div class=\"ftc-alert\" style=\"color:#DC2626\"><i class=\"ti ti-alert-triangle\"></i> '+ultRep.descripcion.substring(0,30)+'...</div>';
+      if (alertaTxt) html += '<div class=\"ftc-alert\" style=\"color:#D97706\"><i class=\"ti ti-calendar-exclamation\"></i> '+alertaTxt+'</div>';
+      var batHtml = getBatteryBar(c);
+      if (batHtml) html += batHtml;
+      html += '</div>';
+      contador++;
     }
-    html += '<span class="badge '+badgeClass+'" style="position:absolute;top:10px;right:10px;font-size:9px">'+badgeTxt+'</span>';
-    html += '<div class="ftc-id">'+c.id+'</div>';
-    html += '<div class="ftc-mod">'+c.nom+'</div>';
-    if (c.cho !== '---') html += '<div class=\"ftc-info\"><i class=\"ti ti-user\"></i> '+c.cho+'</div>';
-    if (c.ps && c.ps !== '---') html += '<div class=\"ftc-info\"><i class=\"ti ti-tool\"></i> Prox. service: '+c.ps+'</div>';
-    if (ultRep) html += '<div class=\"ftc-alert\" style=\"color:#DC2626\"><i class=\"ti ti-alert-triangle\"></i> '+ultRep.descripcion.substring(0,30)+'...</div>';
-    if (alertaTxt) html += '<div class=\"ftc-alert\" style=\"color:#D97706\"><i class=\"ti ti-calendar-exclamation\"></i> '+alertaTxt+'</div>';
-
-    var batHtml = getBatteryBar(c);
-    if (batHtml) html += batHtml;
-
-    html += '</div>';
+    if (contador >= maxVisible && !flotaExpandida) break;
   }
   if (!flotaExpandida && filtrados.length > maxVisible) {
     html += '<button class="bo" onclick="toggleFlota()" style="grid-column:1/-1;padding:12px;font-size:14px"><i class=\"ti ti-chevron-down\"></i> Ver mas ('+(filtrados.length - maxVisible)+' ocultos)</button>';
