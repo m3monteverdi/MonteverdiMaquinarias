@@ -51,8 +51,7 @@
       <p style="font-size:15px;font-weight:800;margin-bottom:14px;text-align:center">Que ocurrio?</p>
       <div class="qpick-grid">
         <div class="qpick qp-falla" onclick="pickTipo('falla')"><i class="ti ti-alert-triangle"></i><div class="qpick-lbl">Falla</div></div>
-        <div class="qpick qp-prev" onclick="pickTipo('preventivo')"><i class="ti ti-shield-check"></i><div class="qpick-lbl">Preventivo</div></div>
-        <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-tool"></i><div class="qpick-lbl">Service</div></div>
+        <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-tool"></i><div class="qpick-lbl">Service/Preventivo</div></div>
         <div class="qpick qp-engr" onclick="pickTipo('engrase')"><i class="ti ti-droplet"></i><div class="qpick-lbl">Engrase</div></div>
         <div class="qpick qp-neum" onclick="pickTipo('neumatico')"><i class="ti ti-circle-dot"></i><div class="qpick-lbl">Neumáticos</div></div>
         <div class="qpick qp-acc" onclick="pickTipo('accesorios')"><i class="ti ti-wrench"></i><div class="qpick-lbl">Accesorios</div></div>
@@ -68,9 +67,9 @@
         <button class="bo" onclick="qpBack()" style="font-size:11px;padding:5px 10px"><i class="ti ti-arrow-left"></i> Cambiar</button>
       </div>
       <div class="field"><label><i class="ti ti-truck"></i> MÃ¡quina *</label><select id="r-cam"></select></div>
-      <div class="field"><label><i class="ti ti-user"></i> Chofer *</label><select id="r-cho"></select></div>
+      <div class="field"><label><i class="ti ti-user"></i> Máquina *</label><select id="r-cho"></select></div>
       <div class="g2">
-        <div class="field"><label><i class="ti ti-speedboat"></i> Km actuales</label><input type="number" id="r-km" placeholder="ej: 187500"></div>
+        <div class="field"><label><i class="ti ti-speedboat"></i> Horas de uso</label><input type="number" id="r-km" placeholder="ej: 187500"></div>
         <div class="field"><label><i class="ti ti-calendar"></i> Fecha</label><input type="date" id="r-fec"></div>
       </div>
       <div class="field"><label><i class="ti ti-notes"></i> Descripcion *</label><textarea id="r-des" placeholder="Describe el problema o trabajo..."></textarea></div>
@@ -209,14 +208,6 @@
     <button class="bo" onclick="addCamion()" style="width:100%"><i class="ti ti-plus"></i> Agregar mÃ¡quina</button>
   </div>
   <div class="card">
-    <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-users"></i> Choferes</p>
-    <div id="lista-choferes" style="margin-bottom:12px"></div>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="nc-cho" placeholder="Nombre del chofer" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px;flex:1">
-      <button class="bo" onclick="addChofer()"><i class="ti ti-plus"></i> Agregar</button>
-    </div>
-  </div>
-  <div class="card">
     <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-clipboard-data"></i> Datos de la flota</p>
     <p style="font-size:12px;color:#888;margin-bottom:10px">Toca una mÃ¡quina en la pestaÃ±a Flota y despuÃ©s Editar para modificar RTO, seguro, cubiertas y baterÃ­a.</p>
   </div>
@@ -251,3 +242,4 @@
 <script src="js/app.js?v=9" defer></script>
 </body>
 </html>
+

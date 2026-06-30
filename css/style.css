@@ -809,10 +809,10 @@ body {
 .qp-serv  { background: var(--primary-light);  border-color: #F3F4F6; color: var(--primary); }
 .qp-engr  { background: hsl(250,70%,96%); border-color: hsl(250,70%,84%); color: var(--az2); }
 .qp-neum { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%); border-color: #16A34A; }
-.qp-comp { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); border-color: #D97706; }
+.qp-comp { background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-color: #D97706; }
 .qp-comb { background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%); border-color: #2563EB; }
 .qp-ace { background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #059669; }
-.qp-acc { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); border-color: #D97706; }
+.qp-acc { background: linear-gradient(135deg, #D97706 0%, #92400E 100%); border-color: #D97706; }
 
 /* =============================================
    DETALLE CARD - rc-item mini stats
@@ -874,6 +874,7 @@ body {
   #qr-modal { display: flex !important; }
   #qr-print-area { display: flex !important; justify-content: center; padding: 20px; }
 }
+
 
 
 
