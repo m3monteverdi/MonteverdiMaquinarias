@@ -33,7 +33,7 @@
 <div class="pane on" id="pane-flota">
   <div class="search-box">
     <i class="ti ti-search"></i>
-    <input type="text" id="search-flota" placeholder="Buscar mÃ¡quina, chofer o modelo..." oninput="renderFlota()">
+    <input type="text" id="search-flota" placeholder="Buscar mÃ¡quina, maquinista o modelo..." oninput="renderFlota()">
   </div>
   <div class="flota-grid" id="flota-grid"><div class="loader">Cargando...</div></div>
 </div>
@@ -194,6 +194,14 @@
     </div>
   </div>
 
+  <div class="pane" id="pane-maquinistas">
+    <div class="card" style="margin-bottom:12px">
+      <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-user"></i> Maquinistas</p>
+      <div id="lista-maquinistas"></div>
+      <button class="bo" onclick="addMaquinista()" style="width:100%;margin-top:8px"><i class="ti ti-plus"></i> Agregar Maquinista</button>
+    </div>
+  </div>
+
   <div class="pane" id="pane-config">
    <div class="card card-blue" style="margin-bottom:12px">
      <p style="font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px"><i class="ti ti-file-report"></i> Generar informe</p>
@@ -244,4 +252,5 @@
 <script src="js/app.js?v=9" defer></script>
 </body>
 </html>
+
 

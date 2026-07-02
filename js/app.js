@@ -202,8 +202,7 @@ function fillmaquinarias() {
 }
 function fillChoferes() {}
 
-function showTab(id, btn) {
-  document.querySelectorAll('.pane').forEach(function(p) { p.classList.remove('on'); });
+function showTab(id, btn) {\r\n  document.querySelectorAll('.pane').forEach(function(p) { p.classList.remove('on'); });\r\n  document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('on'); });\r\n  var pane = document.getElementById('pane-' + id);\r\n  if (pane) pane.classList.add('on');\r\n  if (btn) btn.classList.add('on');\r\n  if (id === 'flota') renderFlota();\r\n  if (id === 'maquinistas') renderMaquinistas();\r\n});
   document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('on'); });
   document.getElementById('pane-'+id).classList.add('on');
   if (btn) btn.classList.add('on');
@@ -1555,3 +1554,28 @@ init();
 
 
 
+
+var maquinistas = [];
+function renderMaquinistas() {
+  var el = document.getElementById('lista-maquinistas');
+  if (!el) return;
+  if (!maquinistas.length) { el.innerHTML = '<p style="color:#888;text-align:center;padding:1rem">Sin maquinistas cargados.</p>'; return; }
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+  for (var i=0; i<maquinistas.length; i++) {
+    var m = maquinistas[i];
+    var tiene = m.carnet ? '<span class="badge bgrn">Carnet: '+m.carnet+'</span>' : '<span class="badge bred">Sin carnet</span>';
+    html += '<div class="card" style="margin-bottom:0"><p style="font-size:16px;font-weight:800;margin-bottom:6px">'+m.nombre+'</p>';
+    html += '<p style="font-size:12px;color:#888;margin-bottom:6px">MÃ¡quinas: '+(m.maquinas||'---')+'</p>';
+    html += '<div>'+tiene+'</div></div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+function addMaquinista() {
+  var nombre = prompt('Nombre del maquinista:');
+  if (!nombre) return;
+  var maquinas = prompt('MÃ¡quinas que opera (separadas por coma):');
+  var carnet = prompt('NÃºmero de carnet de maquinista:');
+  maquinistas.push({nombre:nombre, maquinas:maquinas||'', carnet:carnet||''});
+  renderMaquinistas();
+}
