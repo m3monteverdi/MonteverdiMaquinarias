@@ -52,18 +52,7 @@ body {
 }
 
 /* Header */
-.hdr {
-  background: linear-gradient(135deg, var(--dark) 0%, #1e242c 100%);
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  box-shadow: 0 2px 10px rgba(0,0,0,.15);
-  color: #fff;
-}
+.hdr { background: linear-gradient(135deg, var(--az) 0%, var(--azd) 100%); padding: 14px 20px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 10px rgba(0,0,0,.15); color: var(--dark); }
 
 .hdr-logo {
   width: 48px;
@@ -83,8 +72,7 @@ body {
 
 .hsub {
   font-size: 12px;
-  color: var(--az);
-  font-weight: 600;
+  color: var(--dark); font-weight: 600;
 }
 
 .online-badge {
@@ -514,3 +502,4 @@ table td {
     grid-template-columns: 1fr;
   }
 }
+
