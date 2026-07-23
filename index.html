@@ -34,7 +34,7 @@
     <button class="tab" onclick="showTab('reportar', this)"><i class="ti ti-clipboard-list"></i>Reportar</button>
     <button class="tab" onclick="showTab('reparar', this)"><i class="ti ti-tool"></i>Reparar</button>
     <button class="tab" onclick="showTab('ot', this)"><i class="ti ti-folder"></i>OT</button>
-    <button class="tab" onclick="showTab('maquinistas', this)"><i class="ti ti-users"></i>Maquinistas</button>
+    <button class="tab" onclick="askKeyMaquinistas(this)"><i class="ti ti-users"></i>Maquinistas</button>
     <button class="tab" onclick="showTab('documentos', this)"><i class="ti ti-file-text"></i>Documentos</button>
     <button class="tab" onclick="askKey(this)"><i class="ti ti-settings"></i>Config</button>
   </div>
@@ -352,14 +352,14 @@
   </div>
   <div id="qr-print-area" style="display:none"></div>
 
-  <!-- MODAL: Edición de máquina en Config -->
+  <!-- MODAL: Edición -->
   <div id="edit-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center">
     <div class="card" style="max-width:420px;width:92%;text-align:left;position:relative">
       <button class="bo" onclick="closeEdit()" style="position:absolute;top:10px;right:10px;padding:4px 8px;font-size:11px"><i class="ti ti-x"></i></button>
-      <p style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--az)">Editar datos de la máquina</p>
-      <div id="edit-form-maq"></div>
+      <p style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--az)" id="edit-modal-title">Editar datos</p>
+      <div id="edit-form-container"></div>
       <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="bp" onclick="saveEditMaquina()" style="flex:1"><i class="ti ti-device-floppy"></i> Guardar</button>
+        <button class="bp" onclick="saveEditCurrent()" style="flex:1"><i class="ti ti-device-floppy"></i> Guardar</button>
         <button class="bo" onclick="closeEdit()">Cancelar</button>
       </div>
     </div>

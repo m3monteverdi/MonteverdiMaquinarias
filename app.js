@@ -16,6 +16,8 @@ let documentos = [];
 let tipoReporteSeleccionado = '';
 let adminValidado = false;
 let editingMaquinaId = null;
+let editingMaquinistaId = null;
+let editingType = null; // 'maquina' | 'maquinista'
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', async () => {
@@ -116,6 +118,21 @@ function showTab(tabId, btn) {
   // Clases active
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   if (btn) btn.classList.add('on');
+}
+
+function askKeyMaquinistas(btn) {
+  if (adminValidado) {
+    showTab('maquinistas', btn);
+    return;
+  }
+  const clave = prompt('Introduce la contraseña de configuración:');
+  if (clave === ADMIN_PASS) {
+    adminValidado = true;
+    showTab('maquinistas', btn);
+    showMsg('success', 'Acceso de administrador concedido');
+  } else if (clave !== null) {
+    alert('Contraseña incorrecta');
+  }
 }
 
 // Solicitar contraseña para Configuración
@@ -829,7 +846,8 @@ function renderConfigListas() {
                   <td>${m.vencimiento_carnet || '-'}</td>
                   <td>${m.obra_asignada || '-'}</td>
                   <td>
-                    <button class="bo" style="padding:4px 8px; color:var(--red); border-color:var(--redl)" onclick="deleteMaquinista('${m.id}')"><i class="ti ti-trash"></i></button>
+                    <button class="bo" style="padding:4px 8px; display:inline-flex" onclick="openEditMaquinista('${m.id}')"><i class="ti ti-edit"></i></button>
+                    <button class="bo" style="padding:4px 8px; display:inline-flex; color:var(--red); border-color:var(--redl)" onclick="deleteMaquinista('${m.id}')"><i class="ti ti-trash"></i></button>
                   </td>
                 </tr>
               `).join('')}
@@ -953,22 +971,24 @@ function openEditMaquina(id) {
   if (!maq) return;
   
   editingMaquinaId = id;
-  document.getElementById('edit-form-maq').innerHTML = `
+  editingType = 'maquina';
+  document.getElementById('edit-modal-title').innerText = 'Editar datos de la máquina';
+  document.getElementById('edit-form-container').innerHTML = `
     <div class="field">
       <label>Nombre</label>
-      <input type="text" id="edit-maq-nom" value="${maq.nombre}">
+      <input type="text" id="edit-nom" value="${maq.nombre}">
     </div>
     <div class="field">
       <label>Modelo</label>
-      <input type="text" id="edit-maq-mod" value="${maq.modelo || ''}">
+      <input type="text" id="edit-mod" value="${maq.modelo || ''}">
     </div>
     <div class="field">
       <label>Horómetro (hs)</label>
-      <input type="number" id="edit-maq-hs" value="${maq.horometro_actual}">
+      <input type="number" id="edit-hs" value="${maq.horometro_actual}">
     </div>
     <div class="field">
       <label>Estado</label>
-      <select id="edit-maq-est">
+      <select id="edit-est">
         <option value="operativa" ${maq.estado === 'operativa' ? 'selected' : ''}>Operativa</option>
         <option value="reparacion" ${maq.estado === 'reparacion' ? 'selected' : ''}>En Reparación</option>
         <option value="baja" ${maq.estado === 'baja' ? 'selected' : ''}>Baja</option>
@@ -978,16 +998,50 @@ function openEditMaquina(id) {
   document.getElementById('edit-modal').style.display = 'flex';
 }
 
+function openEditMaquinista(id) {
+  const op = maquinistas.find(m => m.id === id);
+  if (!op) return;
+  
+  editingMaquinistaId = id;
+  editingType = 'maquinista';
+  document.getElementById('edit-modal-title').innerText = 'Editar datos del maquinista';
+  document.getElementById('edit-form-container').innerHTML = `
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="edit-nom" value="${op.nombre || ''}">
+    </div>
+    <div class="field">
+      <label>Teléfono</label>
+      <input type="text" id="edit-tel" value="${op.telefono || ''}">
+    </div>
+    <div class="field">
+      <label>Categoría de Carnet</label>
+      <input type="text" id="edit-cat" value="${op.categoria_carnet || ''}">
+    </div>
+    <div class="field">
+      <label>Vencimiento de Carnet</label>
+      <input type="date" id="edit-venc" value="${op.vencimiento_carnet || ''}">
+    </div>
+    <div class="field">
+      <label>Obra asignada</label>
+      <input type="text" id="edit-obra" value="${op.obra_asignada || ''}">
+    </div>
+  `;
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
 function closeEdit() {
   document.getElementById('edit-modal').style.display = 'none';
   editingMaquinaId = null;
+  editingMaquinistaId = null;
+  editingType = null;
 }
 
 async function saveEditMaquina() {
-  const nom = document.getElementById('edit-maq-nom').value.trim();
-  const mod = document.getElementById('edit-maq-mod').value.trim();
-  const hs = parseFloat(document.getElementById('edit-maq-hs').value) || 0;
-  const est = document.getElementById('edit-maq-est').value;
+  const nom = document.getElementById('edit-nom').value.trim();
+  const mod = document.getElementById('edit-mod').value.trim();
+  const hs = parseFloat(document.getElementById('edit-hs').value) || 0;
+  const est = document.getElementById('edit-est').value;
 
   try {
     const { error } = await sb.from('maquinas')
@@ -1001,6 +1055,44 @@ async function saveEditMaquina() {
   } catch (err) {
     console.error(err);
     showMsg('error', 'Error al editar máquina.');
+  }
+}
+
+async function saveEditMaquinista() {
+  const nom = document.getElementById('edit-nom').value.trim();
+  const tel = document.getElementById('edit-tel').value.trim();
+  const cat = document.getElementById('edit-cat').value.trim();
+  const venc = document.getElementById('edit-venc').value.trim();
+  const obra = document.getElementById('edit-obra').value.trim();
+
+  try {
+    const { error } = await sb.from('maquinistas')
+      .update({
+        nombre: nom,
+        telefono: tel,
+        categoria_carnet: cat,
+        vencimiento_carnet: venc,
+        obra_asignada: obra
+      })
+      .eq('id', editingMaquinistaId);
+
+    if (error) throw error;
+    showMsg('success', 'Maquinista editado correctamente');
+    closeEdit();
+    await cargarTodo();
+  } catch (err) {
+    console.error(err);
+    showMsg('error', 'Error al editar maquinista.');
+  }
+}
+
+function saveEditCurrent() {
+  if (editingType === 'maquina') {
+    saveEditMaquina();
+  } else if (editingType === 'maquinista') {
+    saveEditMaquinista();
+  } else {
+    closeEdit();
   }
 }
 
