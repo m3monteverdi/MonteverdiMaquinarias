@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WORKFLOT</title>
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- XLSX Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <!-- Tabler Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <div class="hdr noprint">
+    <img src="assets/logo.png" class="hdr-logo" alt="Logo Monteverdi">
+    <div>
+      <div class="htit">WORKFLOT</div>
+      <div class="hsub" id="hdr-sub">MAQUINARIAS MONTEVERDI</div>
+    </div>
+    <div id="online-badge" class="online-badge on"><i class="ti ti-wifi"></i> En línea</div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs noprint">
+    <button class="tab on" onclick="showTab('dashboard', this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+    <button class="tab" onclick="showTab('reportar', this)"><i class="ti ti-clipboard-list"></i>Reportar</button>
+    <button class="tab" onclick="showTab('reparar', this)"><i class="ti ti-tool"></i>Reparar</button>
+    <button class="tab" onclick="showTab('ot', this)"><i class="ti ti-folder"></i>OT</button>
+    <button class="tab" onclick="showTab('maquinistas', this)"><i class="ti ti-users"></i>Maquinistas</button>
+    <button class="tab" onclick="showTab('documentos', this)"><i class="ti ti-file-text"></i>Documentos</button>
+    <button class="tab" onclick="askKey(this)"><i class="ti ti-settings"></i>Config</button>
+  </div>
+
+  <div class="main-container">
+    <!-- Messages notifications -->
+    <div class="msg mok" id="ok-msg" style="display:none"><i class="ti ti-check"></i><span></span></div>
+    <div class="msg merr" id="err-msg" style="display:none"><i class="ti ti-alert-circle"></i><span></span></div>
+
+    <!-- PANE: Dashboard -->
+    <div class="pane on" id="pane-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card op">
+          <i class="ti ti-circle-check"></i>
+          <div>
+            <div class="kpi-num" id="kpi-operativas">0</div>
+            <div class="kpi-lbl">Máquinas Operativas</div>
+          </div>
+        </div>
+        <div class="kpi-card rep">
+          <i class="ti ti-tool"></i>
+          <div>
+            <div class="kpi-num" id="kpi-reparacion">0</div>
+            <div class="kpi-lbl">En Reparación</div>
+          </div>
+        </div>
+        <div class="kpi-card srv">
+          <i class="ti ti-clock"></i>
+          <div>
+            <div class="kpi-num" id="kpi-servicios">0</div>
+            <div class="kpi-lbl">Próximos Services</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertas Panel -->
+      <div class="card alert-panel" style="margin-top:20px;">
+        <h3><i class="ti ti-alert-triangle" style="color:var(--amb)"></i> Panel de Alertas</h3>
+        <div id="dashboard-alerts" class="alerts-list">
+          <div class="loader">Cargando alertas...</div>
+        </div>
+      </div>
+
+      <!-- Ranking Fallas -->
+      <div class="card" style="margin-top:20px;">
+        <h3><i class="ti ti-chart-bar" style="color:var(--az)"></i> Ranking de Fallas por Máquina</h3>
+        <div id="dashboard-ranking" style="margin-top:10px;">
+          <div class="loader">Cargando estadísticas...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE: Reportar -->
+    <div class="pane" id="pane-reportar">
+      <div id="qp-step1">
+        <div class="card">
+          <p style="font-size:16px;font-weight:800;margin-bottom:14px;text-align:center">¿Qué ocurrió?</p>
+          <div class="qpick-grid">
+            <div class="qpick qp-falla" onclick="pickTipo('falla')"><i class="ti ti-tool"></i><div class="qpick-lbl">Falla</div></div>
+            <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-clock"></i><div class="qpick-lbl">Aviso de Service</div></div>
+            <div class="qpick qp-engr" onclick="pickTipo('engrase')"><i class="ti ti-droplet"></i><div class="qpick-lbl">Engrase</div></div>
+            <div class="qpick qp-neum" onclick="pickTipo('neumatico')"><i class="ti ti-circle-dot"></i><div class="qpick-lbl">Neumáticos / Orugas</div></div>
+            <div class="qpick qp-acc" onclick="pickTipo('accesorio')"><i class="ti ti-package"></i><div class="qpick-lbl">Accesorios</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="qp-step2" class="hid">
+        <div class="card">
+          <div class="rt" style="margin-bottom:14px">
+            <p id="qp-tipo-tit" style="font-size:16px;font-weight:800;color:var(--az)"></p>
+            <button class="bo" onclick="qpBack()"><i class="ti ti-arrow-left"></i> Cambiar</button>
+          </div>
+          
+          <div class="field">
+            <label><i class="ti ti-tractor"></i> Maquinaria *</label>
+            <select id="r-maq" onchange="updateMaqHorometroLabel()"></select>
+          </div>
+          
+          <div class="field">
+            <label><i class="ti ti-user"></i> Maquinista *</label>
+            <select id="r-maq-list"></select>
+          </div>
+
+          <div class="g2">
+            <div class="field">
+              <label><i class="ti ti-clock"></i> Horómetro actual *</label>
+              <input type="number" id="r-hs" placeholder="ej: 2850">
+              <span class="field-hint" id="r-hs-hint"></span>
+            </div>
+            <div class="field">
+              <label><i class="ti ti-calendar"></i> Fecha</label>
+              <input type="date" id="r-fec">
+            </div>
+          </div>
+
+          <div class="field">
+            <label><i class="ti ti-notes"></i> Descripción *</label>
+            <textarea id="r-des" placeholder="Describe el problema o trabajo..."></textarea>
+          </div>
+
+          <div class="field">
+            <label><i class="ti ti-alert-triangle"></i> Prioridad / Urgencia</label>
+            <select id="r-urg">
+              <option value="baja">Baja - Puede seguir trabajando</option>
+              <option value="media" selected>Media - Reparar pronto</option>
+              <option value="alta">Alta - Detener máquina</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label><i class="ti ti-camera"></i> Foto (Opcional)</label>
+            <input type="file" id="r-foto" accept="image/*">
+          </div>
+
+          <!-- Lógica de Próximo Service / Engrase (dinámica) -->
+          <div id="srv-extra" class="hid card" style="background:var(--azl);border:1.5px solid var(--azm);margin-top:15px;margin-bottom:15px">
+            <p style="font-weight:700;margin-bottom:10px;color:var(--azd)">¿Cuándo corresponde el próximo?</p>
+            <div style="display:flex;gap:20px;margin-bottom:10px">
+              <label><input type="radio" name="srv-modo" value="horas" checked onchange="toggleSrvModo('horas')"> Por horas</label>
+              <label><input type="radio" name="srv-modo" value="fecha" onchange="toggleSrvModo('fecha')"> Por fecha</label>
+            </div>
+            
+            <div id="srv-modo-horas-div">
+              <div class="field" style="margin:0">
+                <label>Próximo cada (horas)</label>
+                <input type="number" id="srv-cada-hs" value="250" style="max-width:150px" oninput="calcularProximoSrv()">
+                <div style="margin-top:8px;font-size:13px;font-weight:600">
+                  Horómetro actual: <span id="srv-calc-actual">0</span> hs ➔ Próximo: <span id="srv-calc-proximo" style="color:var(--az)">0</span> hs
+                </div>
+              </div>
+            </div>
+            
+            <div id="srv-modo-fecha-div" class="hid">
+              <div class="field" style="margin:0">
+                <label>Fecha de próximo vencimiento</label>
+                <input type="date" id="srv-proxima-fecha">
+              </div>
+            </div>
+          </div>
+
+          <button class="bp" onclick="guardarReporte()"><i class="ti ti-send"></i> Enviar reporte</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE: Reparar -->
+    <div class="pane" id="pane-reparar">
+      <div class="card" id="buscador-ot">
+        <p style="font-size:14px;font-weight:800;margin-bottom:10px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-tool"></i> Registrar reparación</p>
+        <div class="field">
+          <label>Filtrar por máquina</label>
+          <select id="fil-ot-maq" onchange="loadOTsParaReparar()"></select>
+        </div>
+        <div id="lista-ots-para-reparar"><div class="loader">Cargando OTs...</div></div>
+      </div>
+
+      <div id="form-rep" class="hid">
+        <div class="card" id="falla-sel-info"></div>
+        <div class="card" style="margin-top:15px">
+          <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-hammer"></i> Trabajos realizados</p>
+          <div class="field"><label><i class="ti ti-building-factory-2"></i> Taller</label><input type="text" id="rep-taller" placeholder="ej: Taller Barone"></div>
+          <div class="field"><label><i class="ti ti-list-check"></i> Trabajos realizados *</label><textarea id="rep-trabajos" placeholder="Describe qué se hizo..."></textarea></div>
+          <div class="field"><label><i class="ti ti-package"></i> Repuestos usados</label><textarea id="rep-repuestos" placeholder="ej: Filtros, pernos..." style="min-height:60px"></textarea></div>
+          <div class="g2">
+            <div class="field"><label><i class="ti ti-calendar-check"></i> Fecha entrega</label><input type="date" id="rep-fecha"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="bp" onclick="guardarReparacion()" style="flex:1"><i class="ti ti-device-floppy"></i> Guardar reparación</button>
+            <button class="bo" onclick="cancelarReparacion()"><i class="ti ti-x"></i> Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <p style="font-size:14px;font-weight:800;margin-bottom:10px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-list"></i> Últimas reparaciones registradas</p>
+        <div id="lista-historico-reparaciones"><div class="loader">Cargando...</div></div>
+      </div>
+    </div>
+
+    <!-- PANE: OT -->
+    <div class="pane" id="pane-ot">
+      <div class="card" style="padding:10px">
+        <div class="g2">
+          <select id="fil-ot-select" onchange="renderListaOTs()" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px"></select>
+          <select id="fil-ot-estado" onchange="renderListaOTs()" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+            <option value="todos">Todos los estados</option>
+            <option value="abierta" selected>Abiertas</option>
+            <option value="cerrada">Cerradas (Archivadas)</option>
+          </select>
+        </div>
+      </div>
+      <div class="card" id="lista-ots-general" style="margin-top:15px">
+        <div class="loader">Cargando OTs...</div>
+      </div>
+    </div>
+
+    <!-- PANE: Maquinistas -->
+    <div class="pane" id="pane-maquinistas">
+      <div class="maquinistas-grid" id="maquinistas-grid">
+        <div class="loader">Cargando maquinistas...</div>
+      </div>
+    </div>
+
+    <!-- PANE: Documentos -->
+    <div class="pane" id="pane-documentos">
+      <div class="card">
+        <h3><i class="ti ti-file-text" style="color:var(--az)"></i> Póliza de Seguro de la Flota</h3>
+        <div id="seguro-descarga-container" style="margin-top:10px;">
+          <div class="loader">Cargando póliza...</div>
+        </div>
+      </div>
+      
+      <div class="card" style="margin-top:20px">
+        <h3><i class="ti ti-book" style="color:var(--az)"></i> Manuales de Uso por Máquina</h3>
+        <div id="manuales-container" class="documentos-grid" style="margin-top:10px;">
+          <div class="loader">Cargando manuales...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANE: Configuración -->
+    <div class="pane" id="pane-config">
+      <div class="card card-blue" style="margin-bottom:12px">
+        <p style="font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px"><i class="ti ti-file-report"></i> Generar informe de flota</p>
+        <p style="font-size:12px;opacity:.8;margin-top:4px;margin-bottom:12px">Excel completo: resumen general de horas, historial de reportes, OTs abiertas/cerradas y maquinistas.</p>
+        <button class="bp" onclick="exportarExcel()" style="background:rgba(255,255,255,.2);box-shadow:none;border:2px solid rgba(255,255,255,.5)"><i class="ti ti-file-spreadsheet"></i> Generar informe Excel</button>
+      </div>
+
+      <!-- Importar Excel -->
+      <div class="card" style="border-left: 5px solid var(--az);">
+        <p style="font-size:14px;font-weight:800;margin-bottom:6px;color:var(--dark);display:flex;align-items:center;gap:6px"><i class="ti ti-file-upload" style="color:var(--az)"></i> Importar Máquinas y Maquinistas</p>
+        <p style="font-size:12px;color:#666;margin-bottom:12px">Sube un archivo de Excel para dar de alta máquinas y maquinistas masivamente. El Excel debe tener dos pestañas tituladas <strong>Maquinas</strong> y <strong>Maquinistas</strong>.</p>
+        <div class="field">
+          <input type="file" id="import-excel-file" accept=".xlsx, .xls" style="font-size:13px;padding:8px;">
+        </div>
+        <button class="bp" onclick="importarExcel()" style="margin-top:8px;"><i class="ti ti-upload"></i> Procesar e Importar Excel</button>
+        <div id="import-status" style="font-size:12px;margin-top:8px;font-weight:600;color:var(--muted)"></div>
+      </div>
+
+
+      <!-- Configuración de Máquinas -->
+      <div class="card">
+        <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-tractor"></i> Registrar / Editar Máquinas</p>
+        <div id="config-lista-maquinas" style="margin-bottom:12px"></div>
+        <div class="g2" style="margin-bottom:8px">
+          <input type="text" id="nc-maq-id" placeholder="Código (ej: EX-01)" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+          <input type="text" id="nc-maq-nom" placeholder="Nombre (ej: Excavadora Komatsu)" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+        </div>
+        <div class="g2" style="margin-bottom:8px">
+          <input type="text" id="nc-maq-mod" placeholder="Modelo (ej: PC200)" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+          <input type="number" id="nc-maq-hs" placeholder="Horas actuales" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+        </div>
+        <button class="bo" onclick="addMaquina()" style="width:100%"><i class="ti ti-plus"></i> Agregar / Guardar Máquina</button>
+      </div>
+
+      <!-- Configuración de Maquinistas -->
+      <div class="card" style="margin-top:20px">
+        <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-users"></i> Registrar / Editar Maquinistas</p>
+        <div id="config-lista-maquinistas" style="margin-bottom:12px"></div>
+        
+        <div class="g2" style="margin-bottom:8px">
+          <input type="text" id="nc-oper-nom" placeholder="Nombre completo" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+          <input type="text" id="nc-oper-tel" placeholder="Teléfono (ej: +54...)" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+        </div>
+        <div class="g2" style="margin-bottom:8px">
+          <input type="text" id="nc-oper-cat" placeholder="Cat. Carnet (ej: D.2 / E.1)" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+          <input type="date" id="nc-oper-venc" placeholder="Vencimiento carnet" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+        </div>
+        <div class="field" style="margin-bottom:8px">
+          <label>Obra asignada</label>
+          <input type="text" id="nc-oper-obra" placeholder="ej: Obra Ruta 9" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>Máquinas habilitadas para operar (Mantener Ctrl para seleccionar múltiples)</label>
+          <select id="nc-oper-habilitadas" multiple style="height:100px;font-size:14px;border:1.5px solid #c5d0ef;border-radius:10px"></select>
+        </div>
+        <button class="bo" onclick="addMaquinista()" style="width:100%"><i class="ti ti-plus"></i> Agregar / Guardar Maquinista</button>
+      </div>
+
+      <!-- Configuración de Documentación -->
+      <div class="card" style="margin-top:20px">
+        <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-shield"></i> Póliza de Seguro de Flota</p>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Subí el PDF unificado de la póliza de seguros para que esté disponible en la pestaña Documentos.</p>
+        <input type="file" id="seguro-file-admin" accept=".pdf" style="display:none" onchange="subirSeguroAdmin(this)">
+        <button class="bp" onclick="document.getElementById('seguro-file-admin').click()" style="width:100%"><i class="ti ti-upload"></i> Subir Póliza (.pdf)</button>
+        <div id="seguro-admin-status" style="font-size:12px;color:#888;margin-top:6px"></div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-book"></i> Manuales de Uso</p>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Subí manuales técnicos en PDF para que los maquinistas puedan consultarlos.</p>
+        <div class="field">
+          <label>Nombre del Manual (ej: Manual de Excavadora Komatsu)</label>
+          <input type="text" id="nc-manual-nom" placeholder="Nombre descriptivo" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
+        </div>
+        <input type="file" id="manual-file-admin" accept=".pdf" style="display:none" onchange="subirManualAdmin(this)">
+        <button class="bo" onclick="document.getElementById('manual-file-admin').click()" style="width:100%"><i class="ti ti-upload"></i> Seleccionar y Subir Manual (.pdf)</button>
+        <div id="manual-admin-status" style="font-size:12px;color:#888;margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Generación de QR (Para pegar en la máquina) -->
+  <div id="qr-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center">
+    <div class="card" style="max-width:380px;width:92%;text-align:center;position:relative">
+      <button class="bo" onclick="closeQR()" style="position:absolute;top:10px;right:10px;padding:4px 8px;font-size:11px"><i class="ti ti-x"></i></button>
+      <img src="assets/logo.png" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;border-radius:8px">
+      <p style="font-size:16px;font-weight:800;margin-bottom:4px;color:var(--az)">Escanear para reportar</p>
+      <p id="qr-maq-id" style="font-size:13px;color:#888;font-weight:600;margin-bottom:12px"></p>
+      <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:14px;background:#fff;padding:18px;border-radius:14px;border:2px solid var(--border)"></div>
+      <p style="font-size:11px;color:#888;margin-bottom:12px">Imprime este código y pégalo en la máquina</p>
+      <button class="bp" onclick="printQR()" style="max-width:240px;margin:0 auto"><i class="ti ti-printer"></i> Imprimir QR</button>
+    </div>
+  </div>
+  <div id="qr-print-area" style="display:none"></div>
+
+  <!-- MODAL: Edición de máquina en Config -->
+  <div id="edit-modal" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center">
+    <div class="card" style="max-width:420px;width:92%;text-align:left;position:relative">
+      <button class="bo" onclick="closeEdit()" style="position:absolute;top:10px;right:10px;padding:4px 8px;font-size:11px"><i class="ti ti-x"></i></button>
+      <p style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--az)">Editar datos de la máquina</p>
+      <div id="edit-form-maq"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="bp" onclick="saveEditMaquina()" style="flex:1"><i class="ti ti-device-floppy"></i> Guardar</button>
+        <button class="bo" onclick="closeEdit()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+  <!-- supabase.js file initialized with the client -->
+  <script src="supabase.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
