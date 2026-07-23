@@ -135,6 +135,21 @@ function askKeyMaquinistas(btn) {
   }
 }
 
+function askKeyOT(btn) {
+  if (adminValidado) {
+    showTab('ot', btn);
+    return;
+  }
+  const clave = prompt('Introduce la contraseña de configuración:');
+  if (clave === ADMIN_PASS) {
+    adminValidado = true;
+    showTab('ot', btn);
+    showMsg('success', 'Acceso de administrador concedido');
+  } else if (clave !== null) {
+    alert('Contraseña incorrecta');
+  }
+}
+
 // Solicitar contraseña para Configuración
 function askKey(btn) {
   if (adminValidado) {
