@@ -1,0 +1,36 @@
+FORMATO EXCEL DE IMPORTACIÓN DE DATOS 📊
+
+Para importar masivamente máquinas y maquinistas al sistema Monteverdi Maquinarias, sube un archivo Excel con las siguientes características:
+
+1. El archivo debe ser formato .xlsx o .xls
+2. Debe contener dos pestañas (hojas) tituladas exactamente:
+   - "Maquinas"
+   - "Maquinistas"
+
+---------------------------------------------------------
+PESTAÑA: Maquinas
+Columnas requeridas:
+  - "Código Máquina" (Ej: EX-01, MN-03, CT-09)
+  - "Nombre" (Ej: Excavadora Komatsu, Motoniveladora Caterpillar)
+  - "Modelo" (Ej: PC200, 140K)
+  - "Horas Actuales" (Ej: 2850, 412.5)
+
+Ejemplo de Tabla:
+Código Máquina | Nombre                | Modelo | Horas Actuales
+EX-01          | Excavadora Komatsu    | PC200  | 2850
+MN-03          | Motoniveladora Cat    | 140K   | 1520
+
+---------------------------------------------------------
+PESTAÑA: Maquinistas
+Columnas requeridas:
+  - "Nombre" (Ej: Juan Pérez)
+  - "Teléfono" (Ej: +54 9 341 123-4567)
+  - "Categoría Carnet" (Ej: D.2)
+  - "Vencimiento Carnet" (Ej: 2027-03-15 o formato fecha Excel)
+  - "Obra Asignada" (Ej: Obra Ruta 9)
+  - "Máquinas Habilitadas" (Ej: EX-01, MN-03) -> Separados por coma
+
+Ejemplo de Tabla:
+Nombre      | Teléfono        | Categoría Carnet | Vencimiento Carnet | Obra Asignada  | Máquinas Habilitadas
+Juan Pérez  | +5493411234567  | D.2              | 2027-03-15         | Obra Ruta 9    | EX-01, MN-03
+Carlos Ruiz | +5493417654321  | E.1              | 2026-11-20         | Cantera Norte  | MN-03
