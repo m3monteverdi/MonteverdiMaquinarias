@@ -86,6 +86,7 @@ create table if not exists documentos (
   tipo        text default 'manual'
                 check (tipo in ('manual','poliza','otro')),
   archivo_url text,
+  archivo_base64 text,
   created_at  timestamptz default now()
 );
 
@@ -99,14 +100,40 @@ alter table servicios_proximos disable row level security;
 alter table documentos        disable row level security;
 
 -- =============================================
--- STORAGE BUCKETS — Ejecutar desde el Dashboard
--- de Supabase → Storage → New Bucket
+-- STORAGE BUCKETS
 -- =============================================
--- Bucket "documentos": público, para PDFs
--- Bucket "fotos":      público, para fotos de reportes
---
--- Desde SQL Editor:
--- insert into storage.buckets (id, name, public)
---   values ('documentos', 'documentos', true);
--- insert into storage.buckets (id, name, public)
---   values ('fotos', 'fotos', true);
+insert into storage.buckets (id, name, public)
+  values ('documentos', 'documentos', true)
+  on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+  values ('fotos', 'fotos', true)
+  on conflict (id) do nothing;
+
+-- Política pública de lectura para bucket documentos
+create policy "public_read_documentos"
+  on storage.objects
+  for select
+  to public
+  using (bucket_id = 'documentos');
+
+-- Política pública de lectura para bucket fotos
+create policy "public_read_fotos"
+  on storage.objects
+  for select
+  to public
+  using (bucket_id = 'fotos');
+
+-- Política pública de carga para bucket documentos
+create policy "public_upload_documentos"
+  on storage.objects
+  for insert
+  to public
+  with check (bucket_id = 'documentos');
+
+-- Política pública de carga para bucket fotos
+create policy "public_upload_fotos"
+  on storage.objects
+  for insert
+  to public
+  with check (bucket_id = 'fotos');

@@ -19,6 +19,15 @@ let editingMaquinaId = null;
 let editingMaquinistaId = null;
 let editingType = null; // 'maquina' | 'maquinista'
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', async () => {
   // Establecer fecha por defecto en forms
@@ -630,15 +639,18 @@ function renderDocumentos() {
   if (polizas.length === 0) {
     seguroContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay póliza de seguro cargada.</span>';
   } else {
-    seguroContainer.innerHTML = polizas.map(p => `
-      <div style="display:flex; justify-content:space-between; align-items:center; background:var(--azl); padding:12px; border-radius:var(--radius-sm)">
-        <div>
-          <strong>${p.nombre}</strong><br>
-          <span style="font-size:11px; color:#777">Subido: ${new Date(p.created_at).toLocaleDateString()}</span>
+    seguroContainer.innerHTML = polizas.map(p => {
+      const href = p.archivo_url || (p.archivo_base64 ? `data:application/pdf;base64,${p.archivo_base64}` : '#');
+      return `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--azl); padding:12px; border-radius:var(--radius-sm)">
+          <div>
+            <strong>${p.nombre}</strong><br>
+            <span style="font-size:11px; color:#777">Subido: ${new Date(p.created_at).toLocaleDateString()}</span>
+          </div>
+          <a href="${href}" target="_blank" class="bo" style="background:#fff"><i class="ti ti-download"></i> Descargar PDF</a>
         </div>
-        <a href="${p.archivo_url}" target="_blank" class="bo" style="background:#fff"><i class="ti ti-download"></i> Descargar PDF</a>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   // Filtrar manuales
@@ -646,13 +658,16 @@ function renderDocumentos() {
   if (manuales.length === 0) {
     manualesContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay manuales de uso cargados.</span>';
   } else {
-    manualesContainer.innerHTML = manuales.map(m => `
-      <div class="doc-card">
-        <i class="ti ti-book" style="font-size:24px; color:var(--az)"></i>
-        <strong>${m.nombre}</strong>
-        <a href="${m.archivo_url}" target="_blank" class="bp" style="padding:6px; font-size:11px; margin-top:auto"><i class="ti ti-download"></i> Abrir Manual</a>
-      </div>
-    `).join('');
+    manualesContainer.innerHTML = manuales.map(m => {
+      const href = m.archivo_url || (m.archivo_base64 ? `data:application/pdf;base64,${m.archivo_base64}` : '#');
+      return `
+        <div class="doc-card">
+          <i class="ti ti-book" style="font-size:24px; color:var(--az)"></i>
+          <strong>${m.nombre}</strong>
+          <a href="${href}" target="_blank" class="bp" style="padding:6px; font-size:11px; margin-top:auto"><i class="ti ti-download"></i> Abrir Manual</a>
+        </div>
+      `;
+    }).join('');
   }
 }
 
@@ -1121,36 +1136,27 @@ async function subirSeguroAdmin(input) {
   const fileName = `poliza_seguro_${Date.now()}.pdf`;
 
   try {
-    const { error: uploadErr } = await sb.storage
-      .from('documentos')
-      .upload(fileName, file, { cacheControl: '3600', upsert: true });
+    const base64 = await fileToBase64(file);
 
-    if (uploadErr) throw uploadErr;
-
-    const { data: publicUrlData } = sb.storage.from('documentos').getPublicUrl(fileName);
-    const pdfUrl = publicUrlData.publicUrl;
-
-    // Eliminar pólizas antiguas para conservar la última unificada
     const viejasPolizas = documentos.filter(d => d.tipo === 'poliza');
     for (let p of viejasPolizas) {
       await sb.from('documentos').delete().eq('id', p.id);
     }
 
-    // Insertar el nuevo documento
     const { error: dbErr } = await sb.from('documentos').insert([{
       nombre: 'Póliza General de Flota',
       tipo: 'poliza',
-      archivo_url: pdfUrl
+      archivo_url: null,
+      archivo_base64: base64
     }]);
 
     if (dbErr) throw dbErr;
 
     status.innerText = 'Póliza subida correctamente.';
     await cargarTodo();
-
   } catch (err) {
     console.error(err);
-    status.innerText = 'Error al subir la póliza.';
+    status.innerText = 'Error al subir la póliza: ' + (err.message || err);
   }
 }
 
@@ -1168,22 +1174,15 @@ async function subirManualAdmin(input) {
 
   status.innerText = 'Subiendo manual...';
   const file = input.files[0];
-  const fileName = `manual_${Date.now()}.pdf`;
 
   try {
-    const { error: uploadErr } = await sb.storage
-      .from('documentos')
-      .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
-    if (uploadErr) throw uploadErr;
-
-    const { data: publicUrlData } = sb.storage.from('documentos').getPublicUrl(fileName);
-    const pdfUrl = publicUrlData.publicUrl;
+    const base64 = await fileToBase64(file);
 
     const { error: dbErr } = await sb.from('documentos').insert([{
       nombre: nom,
       tipo: 'manual',
-      archivo_url: pdfUrl
+      archivo_url: null,
+      archivo_base64: base64
     }]);
 
     if (dbErr) throw dbErr;
@@ -1195,7 +1194,7 @@ async function subirManualAdmin(input) {
 
   } catch (err) {
     console.error(err);
-    status.innerText = 'Error al subir el manual.';
+    status.innerText = 'Error al subir el manual: ' + (err.message || err);
   }
 }
 
