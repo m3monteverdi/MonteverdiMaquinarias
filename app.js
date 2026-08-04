@@ -2,7 +2,45 @@
 //  MONTEVERDI MAQUINARIAS — Logic Controller
 // =============================================
 
-const ADMIN_PASS = 'monteverdi';
+const ADMIN_PASS_KEY = 'm3maq_admin_pass';
+function getAdminPass() {
+  try {
+    const v = localStorage.getItem(ADMIN_PASS_KEY);
+    if (v && v.trim()) return v.trim();
+  } catch (e) {}
+  return 'monteverdi';
+}
+const OBRAS_DEFAULT = [
+  'TALLER MECANICO',
+  'CHACRAS PARK',
+  'EL BORGO',
+  'BRODA',
+  'IRIS TOWER',
+  'HOTEL DAKAR',
+  'CASA MENDEZ',
+  'PALACIO DUHAU',
+  'PLANTA HORMIGON',
+  'LIBRE EN DEPOSITO',
+  'IGLESIA ACUTIS',
+  'MARISTAS',
+  'URQUIZA SAN JUAN',
+  'OTROS'
+];
+
+function cargarObras() {
+  try {
+    const guardadas = localStorage.getItem('m3maq_obras');
+    if (guardadas) {
+      OBRAS.length = 0;
+      guardadas.split('\n').forEach(line => {
+        const v = line.trim();
+        if (v) OBRAS.push(v);
+      });
+    }
+  } catch (e) {}
+}
+
+let OBRAS = [];
 
 // Variables globales de la app
 let maquinas = [];
@@ -12,6 +50,7 @@ let ots = [];
 let reparaciones = [];
 let serviciosProximos = [];
 let documentos = [];
+let historial = [];
 
 let tipoReporteSeleccionado = '';
 let adminValidado = false;
@@ -30,6 +69,9 @@ function fileToBase64(file) {
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', async () => {
+  cargarObras();
+  if (OBRAS.length === 0) OBRAS.push(...OBRAS_DEFAULT);
+
   // Establecer fecha por defecto en forms
   const hoy = new Date().toISOString().split('T')[0];
   if (document.getElementById('r-fec')) document.getElementById('r-fec').value = hoy;
@@ -67,9 +109,10 @@ async function cargarTodo() {
     const pReparaciones = sb.from('reparaciones').select('*').order('created_at', { ascending: false });
     const pServicios = sb.from('servicios_proximos').select('*');
     const pDocs = sb.from('documentos').select('*').order('nombre', { ascending: true });
+    const pHist = sb.from('historial_maquinas').select('*').order('fecha', { ascending: false });
 
-    const [rMaq, rOp, rRep, rOt, rRepa, rSrv, rDocs] = await Promise.all([
-      pMaquinas, pMaquinistas, pReportes, pOts, pReparaciones, pServicios, pDocs
+    const [rMaq, rOp, rRep, rOt, rRepa, rSrv, rDocs, rHist] = await Promise.all([
+      pMaquinas, pMaquinistas, pReportes, pOts, pReparaciones, pServicios, pDocs, pHist
     ]);
 
     maquinas = rMaq.data || [];
@@ -79,6 +122,7 @@ async function cargarTodo() {
     reparaciones = rRepa.data || [];
     serviciosProximos = rSrv.data || [];
     documentos = rDocs.data || [];
+    historial = rHist.data || [];
 
     console.log('Datos cargados:', { maquinas, maquinistas, reportes, ots, reparaciones, serviciosProximos, documentos });
 
@@ -96,7 +140,8 @@ function actualizarVistas() {
   renderDashboard();
   renderListaOTs();
   renderMaquinistas();
-  renderDocumentos();
+  renderUbicacion();
+  renderHistorial();
   loadOTsParaReparar();
   renderConfigListas();
 }
@@ -127,6 +172,14 @@ function showTab(tabId, btn) {
   // Clases active
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   if (btn) btn.classList.add('on');
+
+  if (tabId === 'ubicacion') {
+    renderUbicacion();
+  }
+
+  if (tabId === 'historial') {
+    renderHistorial();
+  }
 }
 
 function askKeyMaquinistas(btn) {
@@ -135,7 +188,7 @@ function askKeyMaquinistas(btn) {
     return;
   }
   const clave = prompt('Introduce la contraseña de configuración:');
-  if (clave === ADMIN_PASS) {
+  if (clave === getAdminPass()) {
     adminValidado = true;
     showTab('maquinistas', btn);
     showMsg('success', 'Acceso de administrador concedido');
@@ -150,10 +203,27 @@ function askKeyOT(btn) {
     return;
   }
   const clave = prompt('Introduce la contraseña de configuración:');
-  if (clave === ADMIN_PASS) {
+  if (clave === getAdminPass()) {
     adminValidado = true;
     showTab('ot', btn);
     showMsg('success', 'Acceso de administrador concedido');
+  } else if (clave !== null) {
+    alert('Contraseña incorrecta');
+  }
+}
+
+function askKeyUbicacion(btn) {
+  if (adminValidado) {
+    showTab('ubicacion', btn);
+    renderUbicacion();
+    return;
+  }
+  const clave = prompt('Introduce la contraseña de configuración:');
+  if (clave === getAdminPass()) {
+    adminValidado = true;
+    showTab('ubicacion', btn);
+    showMsg('success', 'Acceso de administrador concedido');
+    renderUbicacion();
   } else if (clave !== null) {
     alert('Contraseña incorrecta');
   }
@@ -163,14 +233,16 @@ function askKeyOT(btn) {
 function askKey(btn) {
   if (adminValidado) {
     showTab('config', btn);
+    cargarConfigObras();
     return;
   }
   
   const clave = prompt('Introduce la contraseña de configuración:');
-  if (clave === ADMIN_PASS) {
+  if (clave === getAdminPass()) {
     adminValidado = true;
     showTab('config', btn);
     showMsg('success', 'Acceso de administrador concedido');
+    cargarConfigObras();
   } else if (clave !== null) {
     alert('Contraseña incorrecta');
   }
@@ -205,6 +277,13 @@ function populateSelects() {
   if (filOtSelect) {
     filOtSelect.innerHTML = '<option value="todas">Todas las máquinas</option>' +
       maquinas.map(m => `<option value="${m.id}">${m.id}</option>`).join('');
+  }
+
+  // Select filtrar historial
+  const filHistMaq = document.getElementById('fil-hist-maq');
+  if (filHistMaq) {
+    filHistMaq.innerHTML = '<option value="todas">Todas las máquinas</option>' +
+      maquinas.map(m => `<option value="${m.id}">${m.id} - ${m.nombre}</option>`).join('');
   }
 
   // Select multiselect de máquinas en Config para maquinistas
@@ -589,7 +668,10 @@ function renderMaquinistas() {
 
   grid.innerHTML = maquinistas.map(m => {
     const maqHabList = m.maquinas_habilitadas && m.maquinas_habilitadas.length > 0 
-      ? m.maquinas_habilitadas.map(id => `<span class="maq-tag">${id}</span>`).join(' ') 
+      ? m.maquinas_habilitadas.map(id => {
+          const maq = maquinas.find(x => x.id === id);
+          return `<span class="maq-tag">${maq ? maq.nombre : id}</span>`;
+        }).join(' ')
       : '<span style="font-size:11px; color:#888">Ninguna habilitada</span>';
 
     return `
@@ -606,10 +688,6 @@ function renderMaquinistas() {
         <div class="maq-data-row">
           <span>Vencimiento Carnet:</span>
           <strong style="${isVencido(m.vencimiento_carnet) ? 'color:var(--red)' : ''}">${m.vencimiento_carnet || 'S/D'}</strong>
-        </div>
-        <div class="maq-data-row">
-          <span>Obra Asignada:</span>
-          <strong>${m.obra_asignada || 'Sin asignar'}</strong>
         </div>
         <div style="margin-top:6px">
           <span style="font-size:12px; font-weight:700; color:var(--dark)">Máquinas Habilitadas:</span>
@@ -629,46 +707,207 @@ function isVencido(fechaStr) {
   return f < hoy;
 }
 
-// --- PESTAÑA DOCUMENTOS ---
-function renderDocumentos() {
-  const seguroContainer = document.getElementById('seguro-descarga-container');
-  const manualesContainer = document.getElementById('manuales-container');
+// --- PESTAÑA UBICACIÓN MÁQUINAS ---
+function renderUbicacion() {
+  const grid = document.getElementById('ubicacion-grid');
+  if (!grid) return;
 
-  // Filtrar Pólizas
-  const polizas = documentos.filter(d => d.tipo === 'poliza');
-  if (polizas.length === 0) {
-    seguroContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay póliza de seguro cargada.</span>';
-  } else {
-    seguroContainer.innerHTML = polizas.map(p => {
-      const href = p.archivo_url || (p.archivo_base64 ? `data:application/pdf;base64,${p.archivo_base64}` : '#');
-      return `
-        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--azl); padding:12px; border-radius:var(--radius-sm)">
-          <div>
-            <strong>${p.nombre}</strong><br>
-            <span style="font-size:11px; color:#777">Subido: ${new Date(p.created_at).toLocaleDateString()}</span>
-          </div>
-          <a href="${href}" target="_blank" class="bo" style="background:#fff"><i class="ti ti-download"></i> Descargar PDF</a>
-        </div>
-      `;
-    }).join('');
+  if (maquinas.length === 0) {
+    grid.innerHTML = '<div class="loader">No hay máquinas registradas.</div>';
+    return;
   }
 
-  // Filtrar manuales
-  const manuales = documentos.filter(d => d.tipo === 'manual');
-  if (manuales.length === 0) {
-    manualesContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay manuales de uso cargados.</span>';
-  } else {
-    manualesContainer.innerHTML = manuales.map(m => {
-      const href = m.archivo_url || (m.archivo_base64 ? `data:application/pdf;base64,${m.archivo_base64}` : '#');
-      return `
-        <div class="doc-card">
-          <i class="ti ti-book" style="font-size:24px; color:var(--az)"></i>
-          <strong>${m.nombre}</strong>
-          <a href="${href}" target="_blank" class="bp" style="padding:6px; font-size:11px; margin-top:auto"><i class="ti ti-download"></i> Abrir Manual</a>
-        </div>
-      `;
-    }).join('');
+  if (!OBRAS || OBRAS.length === 0) {
+    grid.innerHTML = '<div class="loader">No hay obras configuradas. Andá a Configuración y guardá el listado de obras.</div>';
+    return;
   }
+
+  const grupos = {};
+  OBRAS.forEach(o => { grupos[o] = []; });
+  maquinas.forEach(m => {
+    const u = (m.ubicacion || 'OTROS');
+    if (!grupos[u]) grupos[u] = [];
+    grupos[u].push(m);
+  });
+
+  grid.innerHTML = OBRAS.map(obra => {
+    const lista = grupos[obra] || [];
+    if (lista.length === 0) return '';
+    return `
+      <div class="obra-card">
+        <div class="obra-card-header">
+          <i class="ti ti-map-pin"></i>
+          <strong>${obra}</strong>
+          <span class="count">${lista.length} máquina${lista.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="obra-maq-grid">
+          ${lista.map(m => `
+            <div class="obra-maq-chip">
+              <div class="maq-top">
+                <div>
+                  <div class="maq-id">${(m.id || '-').toUpperCase()}</div>
+                  <div class="maq-nombre">${m.nombre || '-'}</div>
+                </div>
+              </div>
+              <div class="maq-meta">${m.modelo || '-'} · ${m.horometro_actual != null ? m.horometro_actual + ' hs' : '-'} · ${(m.estado || '').toUpperCase()}</div>
+              <select onchange="cambiarUbicacionMaquina('${(m.id || '').replace(/'/g, "\\'")}', this.value)">
+                ${OBRAS.map(o => `<option value="${o}" ${o === (m.ubicacion || 'OTROS') ? 'selected' : ''}>${o}</option>`).join('')}
+              </select>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function cambiarUbicacionMaquina(id, obra) {
+  try {
+    const { error } = await sb.from('maquinas')
+      .update({ ubicacion: obra })
+      .eq('id', id);
+
+    if (error) throw error;
+    showMsg('success', `Ubicación de ${id} actualizada a ${obra}`);
+    await cargarTodo();
+  } catch (err) {
+    console.error(err);
+    showMsg('error', 'Error al cambiar la ubicación.');
+  }
+}
+
+// --- PESTAÑA HISTORIAL ---
+function renderHistorial() {
+  const cont = document.getElementById('historial-tabla');
+  if (!cont) return;
+
+  const maqId = document.getElementById('fil-hist-maq').value;
+  const texto = document.getElementById('fil-hist-text').value.trim().toLowerCase();
+
+  let datos = historial.slice();
+
+  if (maqId && maqId !== 'todas') {
+    datos = datos.filter(h => h.maquina_id === maqId);
+  }
+
+  if (texto) {
+    datos = datos.filter(h =>
+      (h.descripcion || '').toLowerCase().includes(texto) ||
+      (h.taller || '').toLowerCase().includes(texto) ||
+      (h.repuestos || '').toLowerCase().includes(texto)
+    );
+  }
+
+  if (datos.length === 0) {
+    cont.innerHTML = '<div class="loader">No hay registros de historial para este filtro.</div>';
+    return;
+  }
+
+  cont.innerHTML = `
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Máquina</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+            <th>Taller</th>
+            <th>Repuestos</th>
+            <th>Horómetro</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${datos.map(h => {
+            const maq = maquinas.find(m => m.id === h.maquina_id);
+            return `
+              <tr>
+                <td>${h.fecha || '-'}</td>
+                <td><strong>${maq ? maq.nombre : (h.maquina_id || '-')}</strong></td>
+                <td>${h.tipo || '-'}</td>
+                <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis">${h.descripcion || '-'}</td>
+                <td>${h.taller || '-'}</td>
+                <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis">${h.repuestos || '-'}</td>
+                <td>${h.horometro != null ? h.horometro + ' hs' : '-'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function importarHistorialExcel() {
+  const fileInput = document.getElementById('historial-excel-file');
+  const status = document.getElementById('historial-import-status');
+
+  if (!fileInput || fileInput.files.length === 0) {
+    alert('Seleccioná un archivo Excel (.xlsx/.xls) con el historial.');
+    return;
+  }
+
+  status.innerText = 'Procesando archivo...';
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = async function (e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+
+      let insertados = 0;
+
+      for (const row of json) {
+        const maquinaRaw = row['Máquina'] || row['Maquina'] || row['Máquina ID'] || row['ID'] || row['Codigo'] || '';
+        const maq = maquinas.find(m => (m.id || '').toUpperCase() === String(maquinaRaw).trim().toUpperCase() || (m.nombre || '').toUpperCase() === String(maquinaRaw).trim().toUpperCase());
+        const maquina_id = maq ? maq.id : String(maquinaRaw).trim().toUpperCase();
+
+        const fechaRaw = row['Fecha'];
+        let fecha = '';
+        if (fechaRaw) {
+          if (fechaRaw instanceof Date) {
+            fecha = fechaRaw.toISOString().split('T')[0];
+          } else {
+            const d = new Date(fechaRaw);
+            if (!isNaN(d.getTime())) fecha = d.toISOString().split('T')[0];
+          }
+        }
+
+        const descripcion = String(row['Descripción'] || row['Descripcion'] || row['Trabajo'] || row['Novedad'] || '').trim();
+        const taller = String(row['Taller'] || '').trim();
+        const repuestos = String(row['Repuestos'] || '').trim();
+        const tipo = String(row['Tipo'] || '').trim();
+        const horometroRaw = row['Horómetro'] || row['Horas'] || row['Horometro'] || null;
+        const horometro = horometroRaw != null ? parseFloat(horometroRaw) : null;
+
+        if (!maquina_id) continue;
+
+        const { error } = await sb.from('historial_maquinas').insert([{
+          maquina_id,
+          fecha: fecha || null,
+          tipo: tipo || 'trabajo',
+          descripcion,
+          taller,
+          repuestos,
+          horometro
+        }]);
+
+        if (!error) insertados++;
+      }
+
+      status.innerText = `Importados ${insertados} registros de historial.`;
+      fileInput.value = '';
+      await cargarTodo();
+    } catch (err) {
+      console.error(err);
+      status.innerText = 'Error al procesar el Excel. Verifica el formato.';
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
 }
 
 // --- PESTAÑA DASHBOARD ---
@@ -824,6 +1063,7 @@ function renderConfigListas() {
                 <th>Modelo</th>
                 <th>Horómetro</th>
                 <th>Estado</th>
+                <th>Ubicación</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -835,6 +1075,7 @@ function renderConfigListas() {
                   <td>${m.modelo}</td>
                   <td>${m.horometro_actual} hs</td>
                   <td>${m.estado.toUpperCase()}</td>
+                  <td>${m.ubicacion || 'OTROS'}</td>
                   <td>
                     <button class="bo" style="padding:4px 8px; display:inline-flex" onclick="openEditMaquina('${m.id}')"><i class="ti ti-edit"></i></button>
                     <button class="bo" style="padding:4px 8px; display:inline-flex; color:var(--red); border-color:var(--redl)" onclick="deleteMaquina('${m.id}')"><i class="ti ti-trash"></i></button>
@@ -907,7 +1148,8 @@ async function addMaquina() {
       nombre: nom,
       modelo: mod,
       horometro_actual: hs,
-      estado: 'operativa'
+      estado: 'operativa',
+      ubicacion: 'OTROS'
     }]);
 
     if (error) throw error;
@@ -1024,6 +1266,12 @@ function openEditMaquina(id) {
         <option value="baja" ${maq.estado === 'baja' ? 'selected' : ''}>Baja</option>
       </select>
     </div>
+    <div class="field">
+      <label>Ubicación</label>
+      <select id="edit-ubicacion">
+        ${OBRAS.map(o => `<option value="${o}" ${o === (maq.ubicacion || 'OTROS') ? 'selected' : ''}>${o}</option>`).join('')}
+      </select>
+    </div>
   `;
   document.getElementById('edit-modal').style.display = 'flex';
 }
@@ -1072,10 +1320,11 @@ async function saveEditMaquina() {
   const mod = document.getElementById('edit-mod').value.trim();
   const hs = parseFloat(document.getElementById('edit-hs').value) || 0;
   const est = document.getElementById('edit-est').value;
+  const ubic = document.getElementById('edit-ubicacion').value;
 
   try {
     const { error } = await sb.from('maquinas')
-      .update({ nombre: nom, modelo: mod, horometro_actual: hs, estado: est })
+      .update({ nombre: nom, modelo: mod, horometro_actual: hs, estado: est, ubicacion: ubic })
       .eq('id', editingMaquinaId);
 
     if (error) throw error;
@@ -1339,6 +1588,97 @@ async function importarExcel() {
 
       let maquinasImportadas = 0;
       let maquinistasImportados = 0;
+      let reportesImportados = 0;
+
+      // 0. Procesar Control de Mantenimientos (nuevo formato)
+      if (workbook.SheetNames.includes('INFO-SEG-SERVICE')) {
+        for (const sheetName of workbook.SheetNames) {
+          if (sheetName === 'INFO-SEG-SERVICE') continue;
+          
+          const parts = sheetName.split('-');
+          let rawId = parts.length > 1 ? parts[parts.length - 1].trim() : sheetName.trim();
+          
+          let maquinaId = null;
+          const searchId = rawId.replace(/\s+/g, '').toUpperCase();
+          const maquinaMatch = maquinas.find(m => m.id.replace(/\s+/g, '').toUpperCase() === searchId);
+          
+          if (maquinaMatch) {
+            maquinaId = maquinaMatch.id;
+          } else {
+            console.warn(`Máquina no encontrada para pestaña: ${sheetName}`);
+            continue;
+          }
+
+          const sheet = workbook.Sheets[sheetName];
+          const jsonArr = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+          
+          let headerRowIdx = -1;
+          for (let i = 0; i < jsonArr.length; i++) {
+            if (jsonArr[i] && jsonArr[i].some(cell => typeof cell === 'string' && cell.trim().toUpperCase() === 'FECHA')) {
+              headerRowIdx = i;
+              break;
+            }
+          }
+
+          if (headerRowIdx !== -1) {
+            for (let i = headerRowIdx + 1; i < jsonArr.length; i++) {
+              const row = jsonArr[i];
+              if (!row || row.length === 0 || (!row[0] && !row[3])) continue;
+
+              let fecha = row[0] || '';
+              const horasStr = row[1] || '';
+              const tarea = row[3] || row[4] || row[2] || '';
+
+              if (!tarea) continue;
+
+              let horas = 0;
+              if (horasStr) {
+                horas = parseFloat(horasStr.toString().replace(',', '.')) || 0;
+              }
+
+              let fechaIso = new Date().toISOString().split('T')[0];
+              if (typeof fecha === 'string' && fecha.trim() !== '') {
+                const fParts = fecha.split(/[\/\-]/);
+                if (fParts.length === 3) {
+                  let yyyy = fParts[2];
+                  let mm = fParts[1];
+                  let dd = fParts[0];
+                  if (yyyy.length === 2) yyyy = '20' + yyyy;
+                  if (yyyy.length === 4) {
+                    fechaIso = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+                  }
+                }
+              }
+
+              const { data: repData, error: repErr } = await sb.from('reportes').insert([{
+                fecha: fechaIso,
+                maquina_id: maquinaId,
+                tipo: 'service',
+                horometro: horas,
+                prioridad: 'baja',
+                descripcion: tarea.toString(),
+                estado: 'resuelto'
+              }]).select();
+
+              if (!repErr && repData && repData.length > 0) {
+                await sb.from('ordenes_trabajo').insert([{
+                  numero: `OT-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`,
+                  reporte_id: repData[0].id,
+                  fecha_apertura: fechaIso,
+                  fecha_cierre: fechaIso,
+                  estado: 'cerrada',
+                  descripcion_falla: tarea.toString()
+                }]);
+                reportesImportados++;
+              }
+            }
+          }
+        }
+        statusDiv.innerText = `Éxito: Se importaron ${reportesImportados} registros de mantenimiento.`;
+        fileInput.value = '';
+        await cargarTodo();
+        return; // Salir de la función
+      }
 
       // 1. Procesar pestaña 'Maquinas'
       if (workbook.SheetNames.includes('Maquinas')) {
@@ -1450,5 +1790,47 @@ if (qrMaqParam) {
       showMsg('success', `Cargado reporte rápido para la máquina ${qrMaqParam}`);
     }
   }, 1500); // Dar un segundo a que carguen los datos de Supabase primero
+}
+
+function guardarObrasConfig() {
+  const ta = document.getElementById('config-obras');
+  const status = document.getElementById('obras-config-status');
+  if (!ta) return;
+  const texto = ta.value;
+  const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+  if (lineas.length === 0) {
+    status.innerText = 'Debe haber al menos una obra.';
+    return;
+  }
+  try {
+    localStorage.setItem('m3maq_obras', lineas.join('\n'));
+    cargarObras();
+    status.innerText = 'Obras guardadas correctamente.';
+    renderUbicacion();
+  } catch (e) {
+    status.innerText = 'Error al guardar obras.';
+  }
+}
+
+function resetObrasConfig() {
+  const ta = document.getElementById('config-obras');
+  const status = document.getElementById('obras-config-status');
+  if (!ta) return;
+  localStorage.removeItem('m3maq_obras');
+  OBRAS.length = 0;
+  OBRAS.push(...OBRAS_DEFAULT);
+  ta.value = OBRAS.join('\n');
+  status.innerText = 'Obras restablecidas.';
+  renderUbicacion();
+}
+
+function cargarConfigObras() {
+  const ta = document.getElementById('config-obras');
+  if (!ta) return;
+  cargarObras();
+  if (OBRAS.length === 0) {
+    OBRAS.push(...OBRAS_DEFAULT);
+  }
+  ta.value = OBRAS.join('\n');
 }
 

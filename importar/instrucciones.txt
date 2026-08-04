@@ -34,3 +34,14 @@ Ejemplo de Tabla:
 Nombre      | Teléfono        | Categoría Carnet | Vencimiento Carnet | Obra Asignada  | Máquinas Habilitadas
 Juan Pérez  | +5493411234567  | D.2              | 2027-03-15         | Obra Ruta 9    | EX-01, MN-03
 Carlos Ruiz | +5493417654321  | E.1              | 2026-11-20         | Cantera Norte  | MN-03
+
+---------------------------------------------------------
+FORMATO EXCEL DE CONTROL DE MANTENIMIENTOS 🛠️
+
+También puedes subir el archivo de historial de mantenimientos para agregar Reportes Resueltos y Órdenes de Trabajo Cerradas.
+
+El archivo debe tener:
+1. Una primera pestaña llamada exactamente "INFO-SEG-SERVICE".
+2. Las demás pestañas deben tener el nombre de la máquina con su código al final (Ej: HAULOTTE-MA01).
+3. Dentro de cada pestaña de máquina, en la fila 5 deben estar los títulos (FECHA | HORAS | PROX SERVICE | TAREA).
+4. A partir de la fila 6, los datos de los mantenimientos realizados.
