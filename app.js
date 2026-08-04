@@ -146,6 +146,72 @@ function actualizarVistas() {
   renderConfigListas();
 }
 
+// ---- HISTORIAL DE MANTENIMIENTOS ----
+function renderHistorial() {
+  const tabla = document.getElementById('historial-tabla');
+  const filMaq = document.getElementById('fil-hist-maq');
+  const filTxt = document.getElementById('fil-hist-text');
+  if (!tabla) return;
+
+  // Poblar select de máquinas
+  if (filMaq && filMaq.options.length === 0) {
+    filMaq.innerHTML = '<option value="">Todas las máquinas</option>' +
+      maquinas.map(m => `<option value="${m.id}">${m.id} — ${m.nombre}</option>`).join('');
+  }
+
+  const maqFil = filMaq ? filMaq.value : '';
+  const txtFil = filTxt ? filTxt.value.toLowerCase().trim() : '';
+
+  let data = [...reportes].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+  if (maqFil) data = data.filter(r => r.maquina_id === maqFil);
+  if (txtFil) data = data.filter(r =>
+    (r.descripcion || '').toLowerCase().includes(txtFil) ||
+    (r.tipo || '').toLowerCase().includes(txtFil)
+  );
+
+  if (data.length === 0) {
+    tabla.innerHTML = '<p style="text-align:center;color:#888;padding:30px;font-size:14px"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:8px"></i>No hay registros de mantenimiento</p>';
+    return;
+  }
+
+  const tipoIcon = { falla: '🔴', service: '🔧', engrase: '🟡', neumatico: '⚫', accesorio: '🔵' };
+  const tipoLabel = { falla: 'Falla', service: 'Service', engrase: 'Engrase', neumatico: 'Neumáticos', accesorio: 'Accesorio' };
+
+  tabla.innerHTML = `
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Máquina</th>
+            <th>Tipo</th>
+            <th>Descripción / Tarea</th>
+            <th>Horómetro</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(r => {
+            const maq = maquinas.find(m => m.id === r.maquina_id);
+            const maqNom = maq ? `<strong>${maq.id}</strong><br><span style="font-size:11px;color:#666">${maq.nombre}</span>` : (r.maquina_id || '-');
+            const ico = tipoIcon[r.tipo] || '📋';
+            const lbl = tipoLabel[r.tipo] || r.tipo;
+            const desc = (r.descripcion || '-').length > 120 ? (r.descripcion || '-').substring(0, 120) + '…' : (r.descripcion || '-');
+            return `<tr>
+              <td style="white-space:nowrap;font-weight:600">${r.fecha || '-'}</td>
+              <td>${maqNom}</td>
+              <td><span style="white-space:nowrap">${ico} ${lbl}</span></td>
+              <td style="font-size:13px">${desc}</td>
+              <td style="text-align:right;white-space:nowrap">${r.horometro ? r.horometro + ' hs' : '-'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:#999;margin-top:8px;text-align:right">${data.length} registro${data.length !== 1 ? 's' : ''}</p>`;
+}
+
+
 // Mostrar mensajes (éxito o error)
 function showMsg(tipo, txt) {
   const okBox = document.getElementById('ok-msg');

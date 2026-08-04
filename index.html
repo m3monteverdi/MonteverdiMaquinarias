@@ -216,6 +216,26 @@
       </div>
     </div>
 
+    <!-- PANE: Historial -->
+    <div class="pane" id="pane-historial">
+      <div class="card" style="margin-bottom:15px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+          <p style="font-size:15px;font-weight:800;color:var(--az);display:flex;align-items:center;gap:6px;margin:0"><i class="ti ti-history"></i> Historial de Mantenimientos</p>
+        </div>
+        <div class="g2" style="margin-bottom:0">
+          <div class="field" style="margin:0">
+            <label><i class="ti ti-tractor"></i> Filtrar por máquina</label>
+            <select id="fil-hist-maq" onchange="renderHistorial()"></select>
+          </div>
+          <div class="field" style="margin:0">
+            <label><i class="ti ti-search"></i> Buscar</label>
+            <input type="text" id="fil-hist-text" placeholder="Buscar en descripción o tarea..." oninput="renderHistorial()">
+          </div>
+        </div>
+      </div>
+      <div id="historial-tabla"><div class="loader">Cargando historial...</div></div>
+    </div>
+
     <!-- PANE: OT -->
     <div class="pane" id="pane-ot">
       <div class="card" style="padding:10px">
