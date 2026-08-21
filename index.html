@@ -36,7 +36,7 @@
     <button class="tab" onclick="showTab('reparar', this)"><i class="ti ti-tool"></i>Reparar</button>
     <button class="tab" onclick="askKeyOT(this)"><i class="ti ti-folder"></i>OT</button>
     <button class="tab" onclick="askKeyMaquinistas(this)"><i class="ti ti-users"></i>Maquinistas</button>
-    <button class="tab" onclick="showTab('documentos', this)"><i class="ti ti-file-text"></i>Documentos</button>
+    <button class="tab" onclick="showTab('historial', this)"><i class="ti ti-history"></i>Historial maquinas</button>
     <button class="tab" onclick="askKey(this)"><i class="ti ti-settings"></i>Config</button>
   </div>
 
@@ -220,7 +220,7 @@
     <div class="pane" id="pane-historial">
       <div class="card" style="margin-bottom:15px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-          <p style="font-size:15px;font-weight:800;color:var(--az);display:flex;align-items:center;gap:6px;margin:0"><i class="ti ti-history"></i> Historial de Mantenimientos</p>
+          <p style="font-size:15px;font-weight:800;color:var(--az);display:flex;align-items:center;gap:6px;margin:0"><i class="ti ti-history"></i> Historial de Máquinas</p>
         </div>
         <div class="g2" style="margin-bottom:0">
           <div class="field" style="margin:0">
@@ -257,23 +257,6 @@
     <div class="pane" id="pane-maquinistas">
       <div class="maquinistas-grid" id="maquinistas-grid">
         <div class="loader">Cargando maquinistas...</div>
-      </div>
-    </div>
-
-    <!-- PANE: Documentos -->
-    <div class="pane" id="pane-documentos">
-      <div class="card">
-        <h3><i class="ti ti-file-text" style="color:var(--az)"></i> Póliza de Seguro de la Flota</h3>
-        <div id="seguro-descarga-container" style="margin-top:10px;">
-          <div class="loader">Cargando póliza...</div>
-        </div>
-      </div>
-      
-      <div class="card" style="margin-top:20px">
-        <h3><i class="ti ti-book" style="color:var(--az)"></i> Manuales de Uso por Máquina</h3>
-        <div id="manuales-container" class="documentos-grid" style="margin-top:10px;">
-          <div class="loader">Cargando manuales...</div>
-        </div>
       </div>
     </div>
 
@@ -339,7 +322,7 @@
       <!-- Configuración de Documentación -->
       <div class="card" style="margin-top:20px">
         <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-shield"></i> Póliza de Seguro de Flota</p>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Subí el PDF unificado de la póliza de seguros para que esté disponible en la pestaña Documentos.</p>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Subí el PDF unificado de la póliza de seguros para que los maquinistas la puedan consultar.</p>
         <input type="file" id="seguro-file-admin" accept=".pdf" style="display:none" onchange="subirSeguroAdmin(this)">
         <button class="bp" onclick="document.getElementById('seguro-file-admin').click()" style="width:100%"><i class="ti ti-upload"></i> Subir Póliza (.pdf)</button>
         <div id="seguro-admin-status" style="font-size:12px;color:#888;margin-top:6px"></div>

@@ -146,72 +146,6 @@ function actualizarVistas() {
   renderConfigListas();
 }
 
-// ---- HISTORIAL DE MANTENIMIENTOS ----
-function renderHistorial() {
-  const tabla = document.getElementById('historial-tabla');
-  const filMaq = document.getElementById('fil-hist-maq');
-  const filTxt = document.getElementById('fil-hist-text');
-  if (!tabla) return;
-
-  // Poblar select de máquinas
-  if (filMaq && filMaq.options.length === 0) {
-    filMaq.innerHTML = '<option value="">Todas las máquinas</option>' +
-      maquinas.map(m => `<option value="${m.id}">${m.id} — ${m.nombre}</option>`).join('');
-  }
-
-  const maqFil = filMaq ? filMaq.value : '';
-  const txtFil = filTxt ? filTxt.value.toLowerCase().trim() : '';
-
-  let data = [...reportes].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-
-  if (maqFil) data = data.filter(r => r.maquina_id === maqFil);
-  if (txtFil) data = data.filter(r =>
-    (r.descripcion || '').toLowerCase().includes(txtFil) ||
-    (r.tipo || '').toLowerCase().includes(txtFil)
-  );
-
-  if (data.length === 0) {
-    tabla.innerHTML = '<p style="text-align:center;color:#888;padding:30px;font-size:14px"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:8px"></i>No hay registros de mantenimiento</p>';
-    return;
-  }
-
-  const tipoIcon = { falla: '🔴', service: '🔧', engrase: '🟡', neumatico: '⚫', accesorio: '🔵' };
-  const tipoLabel = { falla: 'Falla', service: 'Service', engrase: 'Engrase', neumatico: 'Neumáticos', accesorio: 'Accesorio' };
-
-  tabla.innerHTML = `
-    <div class="table-responsive">
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Máquina</th>
-            <th>Tipo</th>
-            <th>Descripción / Tarea</th>
-            <th>Horómetro</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(r => {
-            const maq = maquinas.find(m => m.id === r.maquina_id);
-            const maqNom = maq ? `<strong>${maq.id}</strong><br><span style="font-size:11px;color:#666">${maq.nombre}</span>` : (r.maquina_id || '-');
-            const ico = tipoIcon[r.tipo] || '📋';
-            const lbl = tipoLabel[r.tipo] || r.tipo;
-            const desc = (r.descripcion || '-').length > 120 ? (r.descripcion || '-').substring(0, 120) + '…' : (r.descripcion || '-');
-            return `<tr>
-              <td style="white-space:nowrap;font-weight:600">${r.fecha || '-'}</td>
-              <td>${maqNom}</td>
-              <td><span style="white-space:nowrap">${ico} ${lbl}</span></td>
-              <td style="font-size:13px">${desc}</td>
-              <td style="text-align:right;white-space:nowrap">${r.horometro ? r.horometro + ' hs' : '-'}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-    <p style="font-size:12px;color:#999;margin-top:8px;text-align:right">${data.length} registro${data.length !== 1 ? 's' : ''}</p>`;
-}
-
-
 // Mostrar mensajes (éxito o error)
 function showMsg(tipo, txt) {
   const okBox = document.getElementById('ok-msg');
@@ -844,32 +778,37 @@ async function cambiarUbicacionMaquina(id, obra) {
 
 // --- PESTAÑA HISTORIAL ---
 function renderHistorial() {
-  const cont = document.getElementById('historial-tabla');
-  if (!cont) return;
+  const tabla = document.getElementById('historial-tabla');
+  const filMaq = document.getElementById('fil-hist-maq');
+  const filTxt = document.getElementById('fil-hist-text');
+  if (!tabla) return;
 
-  const maqId = document.getElementById('fil-hist-maq').value;
-  const texto = document.getElementById('fil-hist-text').value.trim().toLowerCase();
-
-  let datos = historial.slice();
-
-  if (maqId && maqId !== 'todas') {
-    datos = datos.filter(h => h.maquina_id === maqId);
+  if (filMaq && filMaq.options.length === 0) {
+    filMaq.innerHTML = '<option value="">Todas las máquinas</option>' +
+      maquinas.map(m => `<option value="${m.id}">${m.id} — ${m.nombre}</option>`).join('');
   }
 
-  if (texto) {
-    datos = datos.filter(h =>
-      (h.descripcion || '').toLowerCase().includes(texto) ||
-      (h.taller || '').toLowerCase().includes(texto) ||
-      (h.repuestos || '').toLowerCase().includes(texto)
-    );
-  }
+  const maqFil = filMaq ? filMaq.value : '';
+  const txtFil = filTxt ? filTxt.value.toLowerCase().trim() : '';
 
-  if (datos.length === 0) {
-    cont.innerHTML = '<div class="loader">No hay registros de historial para este filtro.</div>';
+  let data = [...historial].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+  if (maqFil) data = data.filter(r => r.maquina_id === maqFil);
+  if (txtFil) data = data.filter(r =>
+    (r.descripcion || '').toLowerCase().includes(txtFil) ||
+    (r.taller || '').toLowerCase().includes(txtFil) ||
+    (r.repuestos || '').toLowerCase().includes(txtFil)
+  );
+
+  if (data.length === 0) {
+    tabla.innerHTML = '<p style="text-align:center;color:#888;padding:30px;font-size:14px"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:8px"></i>No hay registros de mantenimiento</p>';
     return;
   }
 
-  cont.innerHTML = `
+  const tipoIcon = { falla: '🔴', service: '🔧', engrase: '🟡', neumatico: '⚫', accesorio: '🔵', trabajo: '🟠' };
+  const tipoLabel = { falla: 'Falla', service: 'Service', engrase: 'Engrase', neumatico: 'Neumáticos', accesorio: 'Accesorio', trabajo: 'Trabajo' };
+
+  tabla.innerHTML = `
     <div class="table-responsive">
       <table>
         <thead>
@@ -877,31 +816,35 @@ function renderHistorial() {
             <th>Fecha</th>
             <th>Máquina</th>
             <th>Tipo</th>
-            <th>Descripción</th>
+            <th>Descripción / Tarea</th>
             <th>Taller</th>
             <th>Repuestos</th>
             <th>Horómetro</th>
           </tr>
         </thead>
         <tbody>
-          ${datos.map(h => {
-            const maq = maquinas.find(m => m.id === h.maquina_id);
-            return `
-              <tr>
-                <td>${h.fecha || '-'}</td>
-                <td><strong>${maq ? maq.nombre : (h.maquina_id || '-')}</strong></td>
-                <td>${h.tipo || '-'}</td>
-                <td style="max-width:260px; overflow:hidden; text-overflow:ellipsis">${h.descripcion || '-'}</td>
-                <td>${h.taller || '-'}</td>
-                <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis">${h.repuestos || '-'}</td>
-                <td>${h.horometro != null ? h.horometro + ' hs' : '-'}</td>
-              </tr>
-            `;
+          ${data.map(r => {
+            const maq = maquinas.find(m => m.id === r.maquina_id);
+            const maqNom = maq ? `<strong>${maq.id}</strong><br><span style="font-size:11px;color:#666">${maq.nombre}</span>` : (r.maquina_id || '-');
+            const ico = tipoIcon[r.tipo] || '📋';
+            const lbl = tipoLabel[r.tipo] || r.tipo;
+            const desc = (r.descripcion || '-').length > 120 ? (r.descripcion || '-').substring(0, 120) + '…' : (r.descripcion || '-');
+            const taller = (r.taller || '-').length > 80 ? (r.taller || '-').substring(0, 80) + '…' : (r.taller || '-');
+            const repuestos = (r.repuestos || '-').length > 80 ? (r.repuestos || '-').substring(0, 80) + '…' : (r.repuestos || '-');
+            return `<tr>
+              <td style="white-space:nowrap;font-weight:600">${r.fecha || '-'}</td>
+              <td>${maqNom}</td>
+              <td><span style="white-space:nowrap">${ico} ${lbl}</span></td>
+              <td style="font-size:13px">${desc}</td>
+              <td style="font-size:13px">${taller}</td>
+              <td style="font-size:13px">${repuestos}</td>
+              <td style="text-align:right;white-space:nowrap">${r.horometro != null ? r.horometro + ' hs' : '-'}</td>
+            </tr>`;
           }).join('')}
         </tbody>
       </table>
     </div>
-  `;
+    <p style="font-size:12px;color:#999;margin-top:8px;text-align:right">${data.length} registro${data.length !== 1 ? 's' : ''}</p>`;
 }
 
 async function importarHistorialExcel() {
@@ -930,6 +873,7 @@ async function importarHistorialExcel() {
         const maquinaRaw = row['Máquina'] || row['Maquina'] || row['Máquina ID'] || row['ID'] || row['Codigo'] || '';
         const maq = maquinas.find(m => (m.id || '').toUpperCase() === String(maquinaRaw).trim().toUpperCase() || (m.nombre || '').toUpperCase() === String(maquinaRaw).trim().toUpperCase());
         const maquina_id = maq ? maq.id : String(maquinaRaw).trim().toUpperCase();
+        const maquina_nombre = String(maquinaRaw).trim();
 
         const fechaRaw = row['Fecha'];
         let fecha = '';
@@ -950,6 +894,18 @@ async function importarHistorialExcel() {
         const horometro = horometroRaw != null ? parseFloat(horometroRaw) : null;
 
         if (!maquina_id) continue;
+
+        if (!maq && maquina_id) {
+          const { error: maqErr } = await sb.from('maquinas').upsert([{
+            id: maquina_id,
+            nombre: maquina_nombre || maquina_id,
+            modelo: '',
+            horometro_actual: horometro || 0,
+            estado: 'operativa',
+            ubicacion: 'OTROS'
+          }]);
+          if (maqErr) console.error('Error creando máquina desde historial:', maqErr);
+        }
 
         const { error } = await sb.from('historial_maquinas').insert([{
           maquina_id,
