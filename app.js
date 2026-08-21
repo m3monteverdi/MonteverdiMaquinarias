@@ -59,8 +59,16 @@ function fileToBase64(file) {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
-    reader.readAsDataURL(file);
+    });
   });
+}
+
+// Devuelve el código corto de la máquina (ej: "CASE580-RE01" -> "RE 01")
+function codigoCorto(id) {
+  if (!id) return '-';
+  const partes = String(id).split(/[\s-]+/).filter(Boolean);
+  const last = partes[partes.length - 1] || String(id);
+  return last.replace(/([A-Za-z]+)(\d+)/, '$1 $2').toUpperCase();
 }
 
 // Inicialización
@@ -741,7 +749,7 @@ function renderUbicacion() {
             <div class="obra-maq-chip">
               <div class="maq-top">
                 <div>
-                  <div class="maq-id">${(m.id || '-').toUpperCase()}</div>
+                  <div class="maq-id">${codigoCorto(m.id)}</div>
                   <div class="maq-nombre">${m.nombre || '-'}</div>
                 </div>
               </div>
@@ -821,7 +829,7 @@ function renderHistorial() {
         <tbody>
           ${data.map(r => {
             const maq = maquinas.find(m => m.id === r.maquina_id);
-            const maqNom = maq ? `<strong>${maq.id}</strong><br><span style="font-size:11px;color:#666">${maq.nombre}</span>` : (r.maquina_id || '-');
+            const maqNom = maq ? `<strong>${codigoCorto(maq.id)}</strong><br><span style="font-size:11px;color:#666">${maq.nombre}</span>` : (codigoCorto(r.maquina_id) || '-');
             const ico = tipoIcon[r.tipo] || '📋';
             const lbl = tipoLabel[r.tipo] || r.tipo;
             const desc = (r.descripcion || '-').length > 120 ? (r.descripcion || '-').substring(0, 120) + '…' : (r.descripcion || '-');
@@ -1098,7 +1106,7 @@ function renderObrasDashboard() {
               : lista.map(m => `
                 <div class="obra-dash-item">
                   <div>
-                    <div class="obra-dash-id">${(m.id || '-').toUpperCase()}</div>
+                    <div class="obra-dash-id">${codigoCorto(m.id)}</div>
                     <div class="obra-dash-nom">${m.nombre || '-'}</div>
                   </div>
                   <button class="obra-dash-remove" title="Sacar de ${obra}" onclick="cambiarUbicacionMaquina('${(m.id || '').replace(/'/g, "\\'")}', 'OTRAS')"><i class="ti ti-x"></i></button>
@@ -1106,7 +1114,7 @@ function renderObrasDashboard() {
             <div class="obra-dash-add">
               <select id="${sid}">
                 <option value="">Agregar máquina…</option>
-                ${disponibles.map(m => `<option value="${m.id}">${(m.id || '').toUpperCase()} — ${m.nombre || ''}</option>`).join('')}
+                ${disponibles.map(m => `<option value="${m.id}">${codigoCorto(m.id)} — ${m.nombre || ''}</option>`).join('')}
               </select>
               <button class="bp" onclick="agregarAMaquinaObra('${sid}', '${(obra || '').replace(/'/g, "\\'")}')"><i class="ti ti-plus"></i></button>
             </div>
@@ -1154,7 +1162,7 @@ function renderConfigListas() {
             <tbody>
               ${maquinas.map(m => `
                 <tr>
-                  <td><strong>${m.id}</strong></td>
+                  <td><strong>${codigoCorto(m.id)}</strong></td>
                   <td>${m.nombre}</td>
                   <td>${m.modelo}</td>
                   <td>${m.horometro_actual} hs</td>
