@@ -493,6 +493,81 @@ table td {
   border-bottom: 1px solid var(--border);
 }
 
+/* Dashboard: Máquinas por Obra */
+.obras-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.obra-dash-card {
+  background: var(--azl);
+  border: 1.5px solid var(--azm);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.obra-dash-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--az);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+.obra-dash-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.obra-dash-count {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 1px 9px;
+  font-size: 12px;
+}
+.obra-dash-body { padding: 8px 12px 12px; }
+.obra-dash-card.collapsed .obra-dash-body { display: none; }
+.obra-dash-empty { font-size: 12px; color: #777; padding: 6px 0 4px; }
+.obra-dash-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--azm);
+}
+.obra-dash-item:first-of-type { border-top: none; }
+.obra-dash-id { font-size: 12px; font-weight: 700; }
+.obra-dash-nom { font-size: 11px; color: #666; }
+.obra-dash-remove {
+  border: none;
+  background: var(--redl);
+  color: var(--red);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.obra-dash-remove:hover { background: var(--red); color: #fff; }
+.obra-dash-add { display: flex; gap: 6px; margin-top: 10px; }
+.obra-dash-add select {
+  flex: 1;
+  font-size: 13px;
+  padding: 7px;
+  border: 1.5px solid var(--azm);
+  border-radius: 8px;
+  min-width: 0;
+  background: #fff;
+}
+.obra-dash-add .bp { padding: 7px 10px; font-size: 13px; }
+
 /* Media Queries */
 @media(max-width: 600px) {
   .kpi-grid {

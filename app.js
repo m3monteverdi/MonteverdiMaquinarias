@@ -11,20 +11,16 @@ function getAdminPass() {
   return 'monteverdi';
 }
 const OBRAS_DEFAULT = [
-  'TALLER MECANICO',
+  'DUHAU',
   'CHACRAS PARK',
-  'EL BORGO',
   'BRODA',
-  'IRIS TOWER',
-  'HOTEL DAKAR',
-  'CASA MENDEZ',
-  'PALACIO DUHAU',
-  'PLANTA HORMIGON',
-  'LIBRE EN DEPOSITO',
+  'IRIS DALVIAN',
   'IGLESIA ACUTIS',
-  'MARISTAS',
-  'URQUIZA SAN JUAN',
-  'OTROS'
+  'ZOCO',
+  'HOTEL DAKAR',
+  'SAN JUAN',
+  'TALLER MECANICO',
+  'OTRAS'
 ];
 
 function cargarObras() {
@@ -1063,6 +1059,72 @@ function renderDashboard() {
       </div>
     `;
   }
+
+  // 3. Obras (máquinas por obra)
+  renderObrasDashboard();
+}
+
+// --- DASHBOARD: OBRAS (máquinas por obra) ---
+function renderObrasDashboard() {
+  const cont = document.getElementById('dashboard-obras');
+  if (!cont) return;
+  if (!OBRAS || OBRAS.length === 0) { cont.innerHTML = ''; return; }
+
+  // Normaliza el legado 'OTROS' al bucket 'OTRAS'
+  const normUbi = u => ((u || 'OTROS').toUpperCase() === 'OTROS') ? 'OTRAS' : (u || 'OTRAS');
+
+  const grupos = {};
+  OBRAS.forEach(o => grupos[o] = []);
+  maquinas.forEach(m => {
+    const u = normUbi(m.ubicacion);
+    if (!grupos[u]) grupos[u] = [];
+    grupos[u].push(m);
+  });
+
+  cont.innerHTML = `<div class="obras-grid">
+    ${OBRAS.map(obra => {
+      const lista = grupos[obra] || [];
+      const disponibles = maquinas.filter(m => normUbi(m.ubicacion) !== obra);
+      const sid = 'add_' + obra.replace(/[^a-zA-Z0-9]/g, '_');
+      return `
+        <div class="obra-dash-card">
+          <div class="obra-dash-head" onclick="toggleObraCard(this)">
+            <div class="obra-dash-name"><i class="ti ti-building"></i> ${obra}</div>
+            <span class="obra-dash-count">${lista.length}</span>
+          </div>
+          <div class="obra-dash-body">
+            ${lista.length === 0
+              ? '<div class="obra-dash-empty">Sin máquinas asignadas</div>'
+              : lista.map(m => `
+                <div class="obra-dash-item">
+                  <div>
+                    <div class="obra-dash-id">${(m.id || '-').toUpperCase()}</div>
+                    <div class="obra-dash-nom">${m.nombre || '-'}</div>
+                  </div>
+                  <button class="obra-dash-remove" title="Sacar de ${obra}" onclick="cambiarUbicacionMaquina('${(m.id || '').replace(/'/g, "\\'")}', 'OTRAS')"><i class="ti ti-x"></i></button>
+                </div>`).join('')}
+            <div class="obra-dash-add">
+              <select id="${sid}">
+                <option value="">Agregar máquina…</option>
+                ${disponibles.map(m => `<option value="${m.id}">${(m.id || '').toUpperCase()} — ${m.nombre || ''}</option>`).join('')}
+              </select>
+              <button class="bp" onclick="agregarAMaquinaObra('${sid}', '${(obra || '').replace(/'/g, "\\'")}')"><i class="ti ti-plus"></i></button>
+            </div>
+          </div>
+        </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function agregarAMaquinaObra(selId, obra) {
+  const sel = document.getElementById(selId);
+  if (!sel || !sel.value) { showMsg('error', 'Seleccioná una máquina para agregar a ' + obra); return; }
+  cambiarUbicacionMaquina(sel.value, obra);
+}
+
+function toggleObraCard(head) {
+  const card = head.closest('.obra-dash-card');
+  if (card) card.classList.toggle('collapsed');
 }
 
 // --- CONFIGURACIÓN Y ADMINISTRACIÓN ---
