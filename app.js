@@ -536,6 +536,27 @@ function iniciarReparacion(otId) {
   document.getElementById('form-rep').classList.remove('hid');
 }
 
+function iniciarReparacionSinOT() {
+  const maqId = document.getElementById('fil-ot-maq').value;
+  if (!maqId || maqId === 'todas') {
+    alert('Seleccioná una máquina para registrar la reparación sin OT.');
+    return;
+  }
+  const maq = maquinas.find(m => m.id === maqId);
+  otParaRepararId = null;
+
+  document.getElementById('falla-sel-info').innerHTML = `
+    <h4 style="color:var(--azd); font-weight:800; margin-bottom:8px">Reparación sin Orden de Trabajo</h4>
+    <div style="font-size:13px">
+      <strong>Máquina:</strong> ${maqId} - ${maq ? maq.nombre : ''}<br>
+      <span style="color:#888">No se vinculará a una OT existente.</span>
+    </div>
+  `;
+
+  document.getElementById('buscador-ot').classList.add('hid');
+  document.getElementById('form-rep').classList.remove('hid');
+}
+
 function cancelarReparacion() {
   otParaRepararId = null;
   document.getElementById('form-rep').classList.add('hid');
@@ -554,7 +575,7 @@ async function guardarReparacion() {
   }
 
   try {
-    // 1. Crear registro en la tabla 'reparaciones'
+    // 1. Crear registro en la tabla 'reparaciones' (ot_id puede ser null si es sin OT)
     const { error: repaErr } = await sb.from('reparaciones').insert([{
       ot_id: otParaRepararId,
       taller: taller,
@@ -565,21 +586,24 @@ async function guardarReparacion() {
 
     if (repaErr) throw repaErr;
 
-    // 2. Cambiar estado de la OT a cerrada
-    const { error: otErr } = await sb.from('ots')
-      .update({ estado: 'cerrada', fecha_cierre: fecha })
-      .eq('id', otParaRepararId);
+    if (otParaRepararId) {
+      // 2. Cambiar estado de la OT a cerrada
+      const { error: otErr } = await sb.from('ots')
+        .update({ estado: 'cerrada', fecha_cierre: fecha })
+        .eq('id', otParaRepararId);
 
-    if (otErr) throw otErr;
+      if (otErr) throw otErr;
 
-    // 3. Devolver máquina al estado "operativa"
-    const ot = ots.find(o => o.id === otParaRepararId);
-    const rep = reportes.find(r => r.id === ot.reporte_id);
-    if (rep) {
-      await sb.from('maquinas').update({ estado: 'operativa' }).eq('id', rep.maquina_id);
+      // 3. Devolver máquina al estado "operativa"
+      const ot = ots.find(o => o.id === otParaRepararId);
+      const rep = reportes.find(r => r.id === ot.reporte_id);
+      if (rep) {
+        await sb.from('maquinas').update({ estado: 'operativa' }).eq('id', rep.maquina_id);
+      }
+      showMsg('success', 'Reparación guardada y OT archivada correctamente');
+    } else {
+      showMsg('success', 'Reparación guardada correctamente (sin OT)');
     }
-
-    showMsg('success', 'Reparación guardada y OT archivada correctamente');
     
     // Resetear formulario
     document.getElementById('rep-taller').value = '';
