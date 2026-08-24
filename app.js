@@ -252,6 +252,43 @@ function askKey(btn) {
   }
 }
 
+// Verificar contraseña de administrador (reutilizable para acciones protegidas)
+function verificarAdmin() {
+  if (adminValidado) return true;
+  const clave = prompt('Introduce la contraseña de administrador para continuar:');
+  if (clave === null) return false;
+  if (clave === getAdminPass()) {
+    adminValidado = true;
+    return true;
+  }
+  alert('Contraseña incorrecta');
+  return false;
+}
+
+// Eliminar una OT y su reporte asociado (protegido por contraseña)
+async function eliminarOT(otId) {
+  if (!verificarAdmin()) return;
+  if (!confirm('¿Eliminar esta OT y su reporte asociado? Esta acción no se puede deshacer.')) return;
+  try {
+    const ot = ots.find(o => o.id === otId);
+    const reporteId = ot ? ot.reporte_id : null;
+    if (reporteId) {
+      const { error: spErr } = await sb.from('servicios_proximos').delete().eq('reporte_id', reporteId);
+      if (spErr) throw spErr;
+      const { error: repErr } = await sb.from('reportes').delete().eq('id', reporteId);
+      if (repErr) throw repErr;
+    } else {
+      const { error: otErr } = await sb.from('ots').delete().eq('id', otId);
+      if (otErr) throw otErr;
+    }
+    showMsg('success', 'OT eliminada correctamente');
+    await cargarTodo();
+  } catch (err) {
+    console.error('Error al eliminar OT:', err);
+    showMsg('error', 'Error al eliminar la OT');
+  }
+}
+
 // Rellenar selects dinámicos
 function populateSelects() {
   const rMaq = document.getElementById('r-maq');
@@ -400,7 +437,53 @@ async function guardarReporte() {
     if (repErr) throw repErr;
     const nuevoReporte = repData[0];
 
-    // 3. Crear OT asociada automáticamente
+    // ENGRASE: se registra en el historial de la máquina, sin crear OT
+    if (tipoReporteSeleccionado === 'engrase') {
+      const srvModoEl = document.querySelector('input[name="srv-modo"]:checked');
+      if (srvModoEl) {
+        const modo = srvModoEl.value;
+        const servicioObj = {
+          maquina_id: maqId,
+          tipo: 'engrase',
+          por_hs: (modo === 'horas'),
+          reporte_id: nuevoReporte.id
+        };
+        if (modo === 'horas') {
+          servicioObj.cada_hs = parseFloat(document.getElementById('srv-cada-hs').value);
+          servicioObj.proximo_hs = hsVal + servicioObj.cada_hs;
+        } else {
+          servicioObj.proxima_fecha = document.getElementById('srv-proxima-fecha').value;
+        }
+        const { error: srvErr } = await sb.from('servicios_proximos').insert([servicioObj]);
+        if (srvErr) throw srvErr;
+      }
+
+      // Registrar en el historial de la máquina
+      const { error: histErr } = await sb.from('historial_maquinas').insert([{
+        maquina_id: maqId,
+        fecha: fec || new Date().toISOString().split('T')[0],
+        tipo: 'engrase',
+        descripcion: des,
+        taller: '',
+        repuestos: '',
+        horometro: hsVal
+      }]);
+      if (histErr) throw histErr;
+
+      // Actualizar solo el horómetro (sin pasar la máquina a "reparación")
+      const { error: maqUpdateErr } = await sb.from('maquinas')
+        .update({ horometro_actual: hsVal })
+        .eq('id', maqId);
+      if (maqUpdateErr) throw maqUpdateErr;
+
+      showMsg('success', 'Engrase registrado en el historial de la máquina.');
+      document.getElementById('r-des').value = '';
+      qpBack();
+      await cargarTodo();
+      return;
+    }
+
+    // RESTO DE TIPOS: crear OT asociada automáticamente
     const numOT = `OT-${Date.now().toString().slice(-6)}`;
     const { data: otData, error: otErr } = await sb.from('ots').insert([{
       reporte_id: nuevoReporte.id,
@@ -411,12 +494,12 @@ async function guardarReporte() {
 
     if (otErr) throw otErr;
 
-    // 4. Si es service o engrase, guardar parámetros de servicio próximo
-    if (tipoReporteSeleccionado === 'service' || tipoReporteSeleccionado === 'engrase') {
+    // Si es service, guardar parámetros de servicio próximo
+    if (tipoReporteSeleccionado === 'service') {
       const modo = document.querySelector('input[name="srv-modo"]:checked').value;
       const servicioObj = {
         maquina_id: maqId,
-        tipo: tipoReporteSeleccionado,
+        tipo: 'service',
         por_hs: (modo === 'horas'),
         reporte_id: nuevoReporte.id
       };
@@ -432,7 +515,7 @@ async function guardarReporte() {
       if (srvErr) throw srvErr;
     }
 
-    // 5. Actualizar el horómetro de la máquina
+    // Actualizar el horómetro y el estado de la máquina
     const { error: maqUpdateErr } = await sb.from('maquinas')
       .update({ horometro_actual: hsVal, estado: 'reparacion' }) // Se asume en reparación al tener OT abierta
       .eq('id', maqId);
@@ -440,11 +523,11 @@ async function guardarReporte() {
     if (maqUpdateErr) throw maqUpdateErr;
 
     showMsg('success', `Reporte enviado con éxito. OT Generada: ${numOT}`);
-    
+
     // Resetear formulario
     document.getElementById('r-des').value = '';
     qpBack();
-    
+
     // Recargar datos
     await cargarTodo();
 
@@ -487,6 +570,9 @@ function loadOTsParaReparar() {
         <p style="font-size:12px; margin-top:6px; color:#555">${rep ? rep.descripcion : 'Sin descripción'}</p>
         <button class="bo" style="margin-top:10px; width:100%" onclick="iniciarReparacion('${o.id}')">
           <i class="ti ti-hammer"></i> Registrar Trabajo Realizado
+        </button>
+        <button class="bo" style="margin-top:8px; width:100%" onclick="eliminarOT('${o.id}')">
+          <i class="ti ti-trash"></i> Eliminar OT
         </button>
       </div>
     `;
@@ -660,6 +746,7 @@ function renderListaOTs() {
             <th>Fecha Apertura</th>
             <th>Detalle Reporte</th>
             <th>Estado</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -682,6 +769,7 @@ function renderListaOTs() {
                 <td>${o.fecha_apertura}</td>
                 <td style="max-width:300px; overflow:hidden; text-overflow:ellipsis">${rep ? rep.descripcion : 'S/D'}</td>
                 <td><span class="maq-tag" style="${badgeClass}">${o.estado.toUpperCase()}</span></td>
+                <td><button class="bo" style="padding:5px 10px;font-size:12px" onclick="eliminarOT('${o.id}')"><i class="ti ti-trash"></i> Eliminar</button></td>
               </tr>
             `;
           }).join('')}
