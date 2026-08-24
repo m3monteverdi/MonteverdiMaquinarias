@@ -289,6 +289,21 @@ async function eliminarOT(otId) {
   }
 }
 
+// Eliminar una entrada del historial de una máquina (protegido por contraseña)
+async function eliminarHistorial(id) {
+  if (!verificarAdmin()) return;
+  if (!confirm('¿Eliminar este registro del historial? Esta acción no se puede deshacer.')) return;
+  try {
+    const { error } = await sb.from('historial_maquinas').delete().eq('id', id);
+    if (error) throw error;
+    showMsg('success', 'Registro del historial eliminado');
+    await cargarTodo();
+  } catch (err) {
+    console.error('Error al eliminar historial:', err);
+    showMsg('error', 'Error al eliminar el registro del historial');
+  }
+}
+
 // Rellenar selects dinámicos
 function populateSelects() {
   const rMaq = document.getElementById('r-maq');
@@ -941,6 +956,7 @@ function renderHistorial() {
             <th>Taller</th>
             <th>Repuestos</th>
             <th>Horómetro</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -960,6 +976,7 @@ function renderHistorial() {
               <td style="font-size:13px">${taller}</td>
               <td style="font-size:13px">${repuestos}</td>
               <td style="text-align:right;white-space:nowrap">${r.horometro != null ? r.horometro + ' hs' : '-'}</td>
+              <td><button class="bo" style="padding:5px 10px;font-size:12px" onclick="eliminarHistorial('${r.id}')"><i class="ti ti-trash"></i> Eliminar</button></td>
             </tr>`;
           }).join('')}
         </tbody>
