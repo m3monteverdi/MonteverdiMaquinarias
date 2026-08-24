@@ -454,8 +454,9 @@ async function guardarReporte() {
   }
 }
 
-// --- PESTAÑA REPARAR ---
+// --- PESTAÕA REPARAR ---
 let otParaRepararId = null;
+let maqParaRepararId = null;
 
 function loadOTsParaReparar() {
   const maqId = document.getElementById('fil-ot-maq').value;
@@ -523,6 +524,7 @@ function iniciarReparacionSinOT() {
   }
   const maq = maquinas.find(m => m.id === maqId);
   otParaRepararId = null;
+  maqParaRepararId = maqId;
 
   document.getElementById('falla-sel-info').innerHTML = `
     <h4 style="color:var(--azd); font-weight:800; margin-bottom:8px">Reparación sin Orden de Trabajo</h4>
@@ -538,6 +540,7 @@ function iniciarReparacionSinOT() {
 
 function cancelarReparacion() {
   otParaRepararId = null;
+  maqParaRepararId = null;
   document.getElementById('form-rep').classList.add('hid');
   document.getElementById('buscador-ot').classList.remove('hid');
 }
@@ -564,6 +567,29 @@ async function guardarReparacion() {
     }]);
 
     if (repaErr) throw repaErr;
+
+    // Determinar la máquina a la que pertenece la reparación
+    let maqIdRep = maqParaRepararId;
+    if (otParaRepararId) {
+      const ot = ots.find(o => o.id === otParaRepararId);
+      const rep = ot ? reportes.find(r => r.id === ot.reporte_id) : null;
+      if (rep) maqIdRep = rep.maquina_id;
+    }
+
+    // Registrar en el historial de la máquina
+    if (maqIdRep) {
+      const fechaHist = fecha || new Date().toISOString().split('T')[0];
+      const { error: histErr } = await sb.from('historial_maquinas').insert([{
+        maquina_id: maqIdRep,
+        fecha: fechaHist,
+        tipo: 'trabajo',
+        descripcion: trabajos,
+        taller: taller,
+        repuestos: repuestos,
+        horometro: null
+      }]);
+      if (histErr) throw histErr;
+    }
 
     if (otParaRepararId) {
       // 2. Cambiar estado de la OT a cerrada
