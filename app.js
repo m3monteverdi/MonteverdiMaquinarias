@@ -310,6 +310,28 @@ async function eliminarHistorial(id) {
   }
 }
 
+// Eliminar las fallas registradas de una máquina (protegido por contraseña)
+async function eliminarFallasMaquina(maqId) {
+  if (!verificarAdmin()) return;
+  if (!confirm(`¿Eliminar TODAS las fallas registradas de ${maqId}? Esta acción no se puede deshacer.`)) return;
+  try {
+    const fallasMaquina = reportes.filter(r => r.maquina_id === maqId && r.tipo === 'falla');
+    for (const f of fallasMaquina) {
+      const { error: spErr } = await sb.from('servicios_proximos').delete().eq('reporte_id', f.id);
+      if (spErr) throw spErr;
+    }
+    const { error } = await sb.from('reportes').delete().eq('maquina_id', maqId).eq('tipo', 'falla');
+    if (error) throw error;
+    reportes = reportes.filter(r => !(r.maquina_id === maqId && r.tipo === 'falla'));
+    actualizarVistas();
+    showMsg('success', `Fallas de ${maqId} eliminadas correctamente`);
+    await cargarTodo();
+  } catch (err) {
+    console.error('Error al eliminar fallas:', err);
+    showMsg('error', 'Error al eliminar las fallas');
+  }
+}
+
 // Rellenar selects dinámicos
 function populateSelects() {
   const rMaq = document.getElementById('r-maq');
@@ -1185,11 +1207,12 @@ function renderDashboard() {
       <div class="table-responsive">
         <table>
           <thead>
-            <tr>
-              <th>Máquina ID</th>
-              <th>Cantidad de Fallas</th>
-              <th>Porcentaje del Total</th>
-            </tr>
+          <tr>
+            <th>Máquina ID</th>
+            <th>Cantidad de Fallas</th>
+            <th>Porcentaje del Total</th>
+            <th>Acciones</th>
+          </tr>
           </thead>
           <tbody>
             ${maquinasRankeadas.map(([maqId, cant]) => {
@@ -1199,6 +1222,7 @@ function renderDashboard() {
                   <td><strong>${maqId}</strong></td>
                   <td>${cant}</td>
                   <td>${pct}%</td>
+                  <td><button class="bo" style="padding:5px 10px;font-size:12px" onclick="eliminarFallasMaquina('${maqId}')"><i class="ti ti-trash"></i> Eliminar</button></td>
                 </tr>
               `;
             }).join('')}
