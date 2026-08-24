@@ -380,8 +380,6 @@ async function guardarReporte() {
   const hsVal = parseFloat(document.getElementById('r-hs').value);
   const fec = document.getElementById('r-fec').value;
   const des = document.getElementById('r-des').value.trim();
-  const urg = document.getElementById('r-urg').value;
-  const fotoInput = document.getElementById('r-foto');
 
   if (!maqId || !operId || isNaN(hsVal) || !des) {
     alert('Por favor complete todos los campos obligatorios (*).');
@@ -389,31 +387,13 @@ async function guardarReporte() {
   }
 
   try {
-    // 1. Subir foto opcional
-    let fotoUrl = null;
-    if (fotoInput.files.length > 0) {
-      const file = fotoInput.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const { data: fileData, error: uploadErr } = await sb.storage
-        .from('fotos')
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
-      
-      if (uploadErr) throw uploadErr;
-      
-      const { data: publicUrlData } = sb.storage.from('fotos').getPublicUrl(fileName);
-      fotoUrl = publicUrlData.publicUrl;
-    }
-
-    // 2. Insertar reporte
+    // Insertar reporte
     const { data: repData, error: repErr } = await sb.from('reportes').insert([{
       maquina_id: maqId,
       maquinista_id: operId,
       tipo: tipoReporteSeleccionado,
       descripcion: des,
       horometro: hsVal,
-      prioridad: urg,
-      foto_url: fotoUrl,
       fecha: fec
     }]).select();
 
@@ -463,7 +443,6 @@ async function guardarReporte() {
     
     // Resetear formulario
     document.getElementById('r-des').value = '';
-    document.getElementById('r-foto').value = '';
     qpBack();
     
     // Recargar datos
