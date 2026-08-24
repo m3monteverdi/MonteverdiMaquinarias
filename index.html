@@ -79,12 +79,15 @@
         </div>
       </div>
 
-      <!-- Ranking Fallas -->
+      <!-- Análisis Histórico por Año -->
       <div class="card" style="margin-top:20px;">
-        <h3><i class="ti ti-robot" style="color:var(--az)"></i> Máquinas que más han fallado (Análisis Histórico)</h3>
-        <div id="dashboard-ranking" style="margin-top:10px;">
-          <div class="loader">Cargando estadísticas...</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <h3 style="margin:0"><i class="ti ti-robot" style="color:var(--az)"></i> Análisis Histórico por Año</h3>
+          <select id="fil-hist-ano" onchange="filtrarDashboardAnio(this.value)" style="font-size:13px;padding:6px 10px;border:1.5px solid #c5d0ef;border-radius:8px;max-width:160px">
+            <option value="todos">Todos los años</option>
+          </select>
         </div>
+        <div id="dashboard-ranking" style="margin-top:14px;"></div>
       </div>
 
       <!-- Obras: máquinas por obra -->
@@ -365,7 +368,7 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
   <!-- supabase.js file initialized with the client -->
-  <script src="supabase.js?v=20260824-3" defer></script>
-  <script src="app.js?v=20260824-3" defer></script>
+  <script src="supabase.js?v=20260824-4" defer></script>
+  <script src="app.js?v=20260824-4" defer></script>
 </body>
 </html>

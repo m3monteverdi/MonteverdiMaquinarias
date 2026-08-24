@@ -47,6 +47,7 @@ let reparaciones = [];
 let serviciosProximos = [];
 let documentos = [];
 let historial = [];
+let dashboardAnioSeleccionado = 'todos';
 
 let tipoReporteSeleccionado = '';
 let adminValidado = false;
@@ -1091,6 +1092,11 @@ async function importarHistorialExcel() {
 }
 
 // --- PESTAÑA DASHBOARD ---
+function filtrarDashboardAnio(val) {
+  dashboardAnioSeleccionado = val;
+  renderDashboard();
+}
+
 function renderDashboard() {
   // 1. KPIs
   const operativas = maquinas.filter(m => m.estado === 'operativa').length;
@@ -1182,36 +1188,49 @@ function renderDashboard() {
     `).join('');
   }
 
-  // 2. Análisis histórico: máquinas con más fallas (desde historial_maquinas)
-  const fallaConteo = {};
-  historial.filter(h => h.tipo === 'falla').forEach(h => {
-    fallaConteo[h.maquina_id] = (fallaConteo[h.maquina_id] || 0) + 1;
+  // 2. Análisis histórico por año (desde historial_maquinas)
+  // Poblar el selector de años con los disponibles en el historial
+  const selAnio = document.getElementById('fil-hist-ano');
+  if (selAnio) {
+    const anios = [...new Set(historial.map(h => (h.fecha || '').slice(0, 4)).filter(a => a && /^\d{4}$/.test(a)))].sort();
+    selAnio.innerHTML = '<option value="todos">Todos los años</option>' + anios.map(a => `<option value="${a}">${a}</option>`).join('');
+    selAnio.value = dashboardAnioSeleccionado;
+  }
+
+  const histFiltrado = historial.filter(h => {
+    const anio = (h.fecha || '').slice(0, 4);
+    return dashboardAnioSeleccionado === 'todos' || anio === dashboardAnioSeleccionado;
   });
 
-  const maquinasRankeadas = Object.entries(fallaConteo).sort((a, b) => b[1] - a[1]);
-  const totalFallas = historial.filter(h => h.tipo === 'falla').length;
+  const conteo = {};
+  histFiltrado.forEach(h => {
+    conteo[h.maquina_id] = (conteo[h.maquina_id] || 0) + 1;
+  });
+  const rankeadas = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+  const totalRegistros = histFiltrado.length;
 
   const rankingContainer = document.getElementById('dashboard-ranking');
-  if (maquinasRankeadas.length === 0) {
-    rankingContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay fallas registradas en el historial.</span>';
+  if (rankeadas.length === 0) {
+    rankingContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay registros en el historial para este filtro.</span>';
   } else {
-    const maxCant = maquinasRankeadas[0][1];
+    const maxCant = rankeadas[0][1];
+    const etiquetaAnio = dashboardAnioSeleccionado === 'todos' ? 'en total' : `en ${dashboardAnioSeleccionado}`;
     rankingContainer.innerHTML = `
-      <p style="font-size:12px;color:#888;margin-bottom:12px">Basado en el historial de mantenimientos cargado (${totalFallas} fallas en total).</p>
+      <p style="font-size:12px;color:#888;margin-bottom:12px">${totalRegistros} reparaciones/mantenimientos ${etiquetaAnio}.</p>
       <div>
-        ${maquinasRankeadas.map(([maqId, cant]) => {
+        ${rankeadas.map(([maqId, cant]) => {
           const maq = maquinas.find(m => m.id === maqId);
           const nombre = maq ? maq.nombre : maqId;
-          const pct = totalFallas ? ((cant / totalFallas) * 100).toFixed(1) : 0;
+          const pct = totalRegistros ? ((cant / totalRegistros) * 100).toFixed(1) : 0;
           const ancho = maxCant ? Math.round((cant / maxCant) * 100) : 0;
           return `
             <div style="margin-bottom:12px">
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;gap:8px">
                 <span><strong>${maqId}</strong> <span style="color:#888">${nombre}</span></span>
-                <span><strong>${cant}</strong> fallas · ${pct}%</span>
+                <span><strong>${cant}</strong> · ${pct}%</span>
               </div>
               <div style="background:#eef1f7;border-radius:6px;height:10px;overflow:hidden">
-                <div style="background:linear-gradient(90deg,var(--amb),#ef4444);height:100%;width:${ancho}%"></div>
+                <div style="background:linear-gradient(90deg,var(--az),var(--amb));height:100%;width:${ancho}%"></div>
               </div>
             </div>
           `;
