@@ -281,6 +281,10 @@ async function eliminarOT(otId) {
       const { error: otErr } = await sb.from('ots').delete().eq('id', otId);
       if (otErr) throw otErr;
     }
+    // Sincronizar vistas inmediatamente (Dashboard incluido) y luego refrescar desde la BD
+    ots = ots.filter(o => o.id !== otId);
+    if (reporteId) reportes = reportes.filter(r => r.id !== reporteId);
+    actualizarVistas();
     showMsg('success', 'OT eliminada correctamente');
     await cargarTodo();
   } catch (err) {
@@ -296,6 +300,8 @@ async function eliminarHistorial(id) {
   try {
     const { error } = await sb.from('historial_maquinas').delete().eq('id', id);
     if (error) throw error;
+    historial = historial.filter(h => h.id !== id);
+    actualizarVistas();
     showMsg('success', 'Registro del historial eliminado');
     await cargarTodo();
   } catch (err) {
