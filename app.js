@@ -272,7 +272,10 @@ async function eliminarOT(otId) {
   try {
     const ot = ots.find(o => o.id === otId);
     const reporteId = ot ? ot.reporte_id : null;
+    let maqIdRep = null;
     if (reporteId) {
+      const rep = reportes.find(r => r.id === reporteId);
+      maqIdRep = rep ? rep.maquina_id : null;
       const { error: spErr } = await sb.from('servicios_proximos').delete().eq('reporte_id', reporteId);
       if (spErr) throw spErr;
       const { error: repErr } = await sb.from('reportes').delete().eq('id', reporteId);
@@ -280,6 +283,17 @@ async function eliminarOT(otId) {
     } else {
       const { error: otErr } = await sb.from('ots').delete().eq('id', otId);
       if (otErr) throw otErr;
+    }
+    // Si la máquina ya no tiene OTs abiertas, volver a "operativa" (sincroniza Dashboard)
+    if (maqIdRep) {
+      const tieneOtraOT = ots.some(o => o.id !== otId && o.estado === 'abierta' && (() => {
+        const r = reportes.find(rr => rr.id === o.reporte_id);
+        return r && r.maquina_id === maqIdRep;
+      })());
+      if (!tieneOtraOT) {
+        const { error: meErr } = await sb.from('maquinas').update({ estado: 'operativa' }).eq('id', maqIdRep);
+        if (meErr) console.error('Error al actualizar estado de máquina:', meErr);
+      }
     }
     // Sincronizar vistas inmediatamente (Dashboard incluido) y luego refrescar desde la BD
     ots = ots.filter(o => o.id !== otId);
@@ -307,28 +321,6 @@ async function eliminarHistorial(id) {
   } catch (err) {
     console.error('Error al eliminar historial:', err);
     showMsg('error', 'Error al eliminar el registro del historial');
-  }
-}
-
-// Eliminar las fallas registradas de una máquina (protegido por contraseña)
-async function eliminarFallasMaquina(maqId) {
-  if (!verificarAdmin()) return;
-  if (!confirm(`¿Eliminar TODAS las fallas registradas de ${maqId}? Esta acción no se puede deshacer.`)) return;
-  try {
-    const fallasMaquina = reportes.filter(r => r.maquina_id === maqId && r.tipo === 'falla');
-    for (const f of fallasMaquina) {
-      const { error: spErr } = await sb.from('servicios_proximos').delete().eq('reporte_id', f.id);
-      if (spErr) throw spErr;
-    }
-    const { error } = await sb.from('reportes').delete().eq('maquina_id', maqId).eq('tipo', 'falla');
-    if (error) throw error;
-    reportes = reportes.filter(r => !(r.maquina_id === maqId && r.tipo === 'falla'));
-    actualizarVistas();
-    showMsg('success', `Fallas de ${maqId} eliminadas correctamente`);
-    await cargarTodo();
-  } catch (err) {
-    console.error('Error al eliminar fallas:', err);
-    showMsg('error', 'Error al eliminar las fallas');
   }
 }
 
@@ -1190,44 +1182,40 @@ function renderDashboard() {
     `).join('');
   }
 
-  // 2. Ranking de fallas por máquina
-  // Agrupar fallas por maquina_id
+  // 2. Análisis histórico: máquinas con más fallas (desde historial_maquinas)
   const fallaConteo = {};
-  reportes.filter(r => r.tipo === 'falla').forEach(r => {
-    fallaConteo[r.maquina_id] = (fallaConteo[r.maquina_id] || 0) + 1;
+  historial.filter(h => h.tipo === 'falla').forEach(h => {
+    fallaConteo[h.maquina_id] = (fallaConteo[h.maquina_id] || 0) + 1;
   });
 
   const maquinasRankeadas = Object.entries(fallaConteo).sort((a, b) => b[1] - a[1]);
+  const totalFallas = historial.filter(h => h.tipo === 'falla').length;
 
   const rankingContainer = document.getElementById('dashboard-ranking');
   if (maquinasRankeadas.length === 0) {
-    rankingContainer.innerHTML = '<span style="font-size:13px; color:#888">No se han registrado fallas técnicas todavía.</span>';
+    rankingContainer.innerHTML = '<span style="font-size:13px; color:#888">No hay fallas registradas en el historial.</span>';
   } else {
+    const maxCant = maquinasRankeadas[0][1];
     rankingContainer.innerHTML = `
-      <div class="table-responsive">
-        <table>
-          <thead>
-          <tr>
-            <th>Máquina ID</th>
-            <th>Cantidad de Fallas</th>
-            <th>Porcentaje del Total</th>
-            <th>Acciones</th>
-          </tr>
-          </thead>
-          <tbody>
-            ${maquinasRankeadas.map(([maqId, cant]) => {
-              const pct = ((cant / reportes.filter(r => r.tipo === 'falla').length) * 100).toFixed(1);
-              return `
-                <tr>
-                  <td><strong>${maqId}</strong></td>
-                  <td>${cant}</td>
-                  <td>${pct}%</td>
-                  <td><button class="bo" style="padding:5px 10px;font-size:12px" onclick="eliminarFallasMaquina('${maqId}')"><i class="ti ti-trash"></i> Eliminar</button></td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+      <p style="font-size:12px;color:#888;margin-bottom:12px">Basado en el historial de mantenimientos cargado (${totalFallas} fallas en total).</p>
+      <div>
+        ${maquinasRankeadas.map(([maqId, cant]) => {
+          const maq = maquinas.find(m => m.id === maqId);
+          const nombre = maq ? maq.nombre : maqId;
+          const pct = totalFallas ? ((cant / totalFallas) * 100).toFixed(1) : 0;
+          const ancho = maxCant ? Math.round((cant / maxCant) * 100) : 0;
+          return `
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;gap:8px">
+                <span><strong>${maqId}</strong> <span style="color:#888">${nombre}</span></span>
+                <span><strong>${cant}</strong> fallas · ${pct}%</span>
+              </div>
+              <div style="background:#eef1f7;border-radius:6px;height:10px;overflow:hidden">
+                <div style="background:linear-gradient(90deg,var(--amb),#ef4444);height:100%;width:${ancho}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
       </div>
     `;
   }
