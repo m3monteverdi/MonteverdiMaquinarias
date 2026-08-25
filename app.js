@@ -1097,6 +1097,62 @@ function filtrarDashboardAnio(val) {
   renderDashboard();
 }
 
+function abrirProximosServices() {
+  const body = document.getElementById('srv-modal-body');
+  const lista = serviciosProximos || [];
+  if (lista.length === 0) {
+    body.innerHTML = '<p style="color:#888;font-size:14px;line-height:1.5">No hay services ni engrases programados todavía. ' +
+      'Al reportar un "Aviso de Service" o "Engrase" desde la pestaña Reportar, se registrará aquí el próximo vencimiento <strong>real</strong> de cada máquina en base a su horómetro actual.</p>';
+  } else {
+    const colorMap = { danger: '#ef4444', warning: '#f59e0b', info: '#64748b' };
+    const items = lista.map(s => {
+      const maq = maquinas.find(m => m.id === s.maquina_id);
+      const nombre = maq ? maq.nombre : s.maquina_id;
+      const hs = maq ? maq.horometro_actual : 0;
+      let estado = 'info', detalle = '';
+      if (s.por_hs) {
+        const restan = (s.proximo_hs != null) ? s.proximo_hs - hs : null;
+        if (restan == null) { estado = 'info'; detalle = 'Sin horómetro de referencia'; }
+        else if (restan <= 0) { estado = 'danger'; detalle = `VENCIDO por ${Math.abs(Math.round(restan))} hs`; }
+        else { estado = 'warning'; detalle = `Faltan ${Math.round(restan)} hs`; }
+      } else if (s.proxima_fecha) {
+        const hoy = new Date(); const f = new Date(s.proxima_fecha);
+        const dias = Math.ceil((f - hoy) / 86400000);
+        if (dias <= 0) { estado = 'danger'; detalle = `Vencido el ${s.proxima_fecha}`; }
+        else { estado = 'warning'; detalle = `Vence el ${s.proxima_fecha} (${dias} días)`; }
+      } else {
+        detalle = 'Sin vencimiento definido';
+      }
+      return { s, nombre, estado, detalle };
+    });
+    const order = { danger: 0, warning: 1, info: 2 };
+    items.sort((a, b) => (order[a.estado] - order[b.estado]) || (a.detalle || '').localeCompare(b.detalle || ''));
+
+    body.innerHTML = `
+      <p style="font-size:13px;color:#444;margin-bottom:14px;background:#f4f6fb;padding:10px 12px;border-radius:8px">
+        <strong>Próxima máquina a dar service:</strong> ${items[0].s.maquina_id} — ${items[0].nombre}
+        <span style="color:${colorMap[items[0].estado]};font-weight:700"> (${items[0].detalle})</span>
+      </p>
+      <div>
+        ${items.map(it => `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid #eee;border-left:4px solid ${colorMap[it.estado]};border-radius:8px;margin-bottom:8px">
+            <div>
+              <div style="font-weight:700">${it.s.maquina_id} — ${it.nombre}</div>
+              <div style="font-size:12px;color:#888;text-transform:capitalize">${it.s.tipo}${it.s.por_hs && it.s.cada_hs ? ' · cada ' + it.s.cada_hs + ' hs' : ''}</div>
+            </div>
+            <div style="text-align:right;font-size:13px;font-weight:700;color:${colorMap[it.estado]}">${it.detalle}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  document.getElementById('srv-modal').style.display = 'flex';
+}
+
+function closeSrvModal() {
+  document.getElementById('srv-modal').style.display = 'none';
+}
+
 function renderDashboard() {
   // 1. KPIs
   const operativas = maquinas.filter(m => m.estado === 'operativa').length;
