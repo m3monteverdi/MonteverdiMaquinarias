@@ -100,14 +100,15 @@
     <!-- PANE: Reportar -->
     <div class="pane" id="pane-reportar">
       <div id="qp-step1">
-        <div class="card">
-          <p style="font-size:16px;font-weight:800;margin-bottom:14px;text-align:center">¿Qué ocurrió?</p>
+        <div class="card" style="border:2px solid var(--red);background:linear-gradient(135deg,#fef2f2 0%,#fff 100%)">
+          <p style="font-size:18px;font-weight:900;margin-bottom:6px;text-align:center;color:var(--red)"><i class="ti ti-alert-triangle"></i> ¿QUÉ LE PASÓ A LA MÁQUINA?</p>
+          <p style="font-size:13px;text-align:center;color:#666;margin-bottom:16px">Seleccioná una opción para reportar</p>
           <div class="qpick-grid">
-            <div class="qpick qp-falla" onclick="pickTipo('falla')"><i class="ti ti-tool"></i><div class="qpick-lbl">Falla</div></div>
-            <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-clock"></i><div class="qpick-lbl">Aviso de Service</div></div>
-            <div class="qpick qp-engr" onclick="pickTipo('engrase')"><i class="ti ti-droplet"></i><div class="qpick-lbl">Engrase</div></div>
-            <div class="qpick qp-neum" onclick="pickTipo('neumatico')"><i class="ti ti-circle-dot"></i><div class="qpick-lbl">Neumáticos / Orugas</div></div>
-            <div class="qpick qp-acc" onclick="pickTipo('accesorio')"><i class="ti ti-package"></i><div class="qpick-lbl">Accesorios</div></div>
+            <div class="qpick qp-falla" onclick="pickTipo('falla')"><i class="ti ti-tool"></i><div class="qpick-lbl">AVISAR FALLA</div></div>
+            <div class="qpick qp-serv" onclick="pickTipo('service')"><i class="ti ti-clock"></i><div class="qpick-lbl">AVISAR QUE YA TIENE QUE HACER EL SERVICE</div></div>
+            <div class="qpick qp-engr" onclick="pickTipo('engrase')"><i class="ti ti-droplet"></i><div class="qpick-lbl">ENGRASE DE MAQUINA</div></div>
+            <div class="qpick qp-neum" onclick="pickTipo('neumatico')"><i class="ti ti-circle-dot"></i><div class="qpick-lbl">PINCHADURA DE NEUMATICO O CAMBIO</div></div>
+            <div class="qpick qp-acc" onclick="pickTipo('accesorio')"><i class="ti ti-package"></i><div class="qpick-lbl">ACCESORIOS / PALA / UÑAS / VIDRIOS / GRASERA</div></div>
           </div>
         </div>
       </div>

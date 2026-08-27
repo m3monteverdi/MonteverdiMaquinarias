@@ -419,11 +419,11 @@ function pickTipo(tipo) {
   
   // Actualizar interfaz del título
   const titulos = {
-    falla: '🔧 Reportar Falla Técnica',
-    service: '⏰ Aviso de Service Programado',
-    engrase: '🛢 Registro de Engrase',
-    neumatico: '🛞 Neumáticos / Orugas',
-    accesorio: '🪟 Novedad en Accesorios / Cabina'
+    falla: '🔧 AVISAR FALLA TÉCNICA',
+    service: '⏰ AVISAR QUE YA TIENE QUE HACER EL SERVICE',
+    engrase: '🛢 ENGRASE DE MAQUINA',
+    neumatico: '🛞 PINCHADURA DE NEUMATICO O CAMBIO',
+    accesorio: '🪟 ACCESORIOS / PALA / UÑAS / VIDRIOS / GRASERA'
   };
   
   document.getElementById('qp-tipo-tit').innerText = titulos[tipo] || 'Nuevo Reporte';
