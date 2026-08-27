@@ -298,7 +298,10 @@ async function eliminarOT(otId) {
     }
     // Sincronizar vistas inmediatamente (Dashboard incluido) y luego refrescar desde la BD
     ots = ots.filter(o => o.id !== otId);
-    if (reporteId) reportes = reportes.filter(r => r.id !== reporteId);
+    if (reporteId) {
+      reportes = reportes.filter(r => r.id !== reporteId);
+      serviciosProximos = serviciosProximos.filter(s => s.reporte_id !== reporteId);
+    }
     actualizarVistas();
     showMsg('success', 'OT eliminada correctamente');
     await cargarTodo();
@@ -313,9 +316,15 @@ async function eliminarHistorial(id) {
   if (!verificarAdmin()) return;
   if (!confirm('¿Eliminar este registro del historial? Esta acción no se puede deshacer.')) return;
   try {
-    const { error } = await sb.from('historial_maquinas').delete().eq('id', id);
-    if (error) throw error;
+    await sb.from('historial_maquinas').delete().eq('id', id);
+    // Eliminar servicios próximos huérfanos (cuyo reporte ya no existe en la tabla reportes)
+    const reportesIds = reportes.map(r => r.id);
+    const serviciosHuerfanos = serviciosProximos.filter(s => s.reporte_id && !reportesIds.includes(s.reporte_id));
+    for (const srv of serviciosHuerfanos) {
+      await sb.from('servicios_proximos').delete().eq('id', srv.id);
+    }
     historial = historial.filter(h => h.id !== id);
+    serviciosProximos = serviciosProximos.filter(s => !serviciosHuerfanos.some(sh => sh.id === s.id));
     actualizarVistas();
     showMsg('success', 'Registro del historial eliminado');
     await cargarTodo();
