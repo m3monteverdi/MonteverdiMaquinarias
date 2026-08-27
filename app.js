@@ -129,26 +129,15 @@ async function cargarTodo() {
     documentos = rDocs.data || [];
     historial = rHist.data || [];
 
-    console.log('servicios_proximos raw:', JSON.stringify(serviciosProximos));
-    console.table(reportes.map(r => ({ id: r.id, maquina_id: r.maquina_id, tipo: r.tipo, descripcion: (r.descripcion || '').substring(0, 50) })));
-    console.log('historial XCMG-CF03:', JSON.stringify(historial.filter(h => h.maquina_id === 'XCMG-CF03')));
-
-    // Limpiar servicios próximos huérfanos (cuyo reporte ya no existe o no tienen reporte_id válido)
-    const reportesIds = reportes.map(r => r.id);
-    const huerfanos = serviciosProximos.filter(s => {
-      if (s.reporte_id && !reportesIds.includes(s.reporte_id)) return true;
-      if (!s.reporte_id) {
-        const existeEnHistorial = historial.some(h => h.maquina_id === s.maquina_id && h.tipo === s.tipo);
-        if (!existeEnHistorial) return true;
-      }
-      return false;
+    // Limpiar servicios próximos que no tienen un historial correspondiente (mismo maquina_id y tipo)
+    const serviciosSinHistorial = serviciosProximos.filter(s => {
+      return !historial.some(h => h.maquina_id === s.maquina_id && h.tipo === s.tipo);
     });
-    if (huerfanos.length > 0) {
-      console.log('Eliminando huérfanos:', huerfanos);
-      for (const h of huerfanos) {
-        await sb.from('servicios_proximos').delete().eq('id', h.id);
+    if (serviciosSinHistorial.length > 0) {
+      for (const srv of serviciosSinHistorial) {
+        await sb.from('servicios_proximos').delete().eq('id', srv.id);
       }
-      serviciosProximos = serviciosProximos.filter(s => !huerfanos.some(x => x.id === s.id));
+      serviciosProximos = serviciosProximos.filter(s => !serviciosSinHistorial.some(x => x.id === s.id));
     }
 
     console.log('Datos cargados:', { maquinas, maquinistas, reportes, ots, reparaciones, serviciosProximos, documentos });
@@ -338,15 +327,18 @@ async function eliminarHistorial(id) {
   if (!verificarAdmin()) return;
   if (!confirm('¿Eliminar este registro del historial? Esta acción no se puede deshacer.')) return;
   try {
-    await sb.from('historial_maquinas').delete().eq('id', id);
-    // Eliminar servicios próximos huérfanos (cuyo reporte ya no existe en la tabla reportes)
-    const reportesIds = reportes.map(r => r.id);
-    const serviciosHuerfanos = serviciosProximos.filter(s => s.reporte_id && !reportesIds.includes(s.reporte_id));
-    for (const srv of serviciosHuerfanos) {
-      await sb.from('servicios_proximos').delete().eq('id', srv.id);
+    const reg = historial.find(h => h.id === id);
+    const { error } = await sb.from('historial_maquinas').delete().eq('id', id);
+    if (error) throw error;
+    // Eliminar servicios próximos de la misma máquina y tipo
+    if (reg) {
+      const serviciosABorrar = serviciosProximos.filter(s => s.maquina_id === reg.maquina_id && s.tipo === reg.tipo);
+      for (const srv of serviciosABorrar) {
+        await sb.from('servicios_proximos').delete().eq('id', srv.id);
+      }
+      serviciosProximos = serviciosProximos.filter(s => !(s.maquina_id === reg.maquina_id && s.tipo === reg.tipo));
     }
     historial = historial.filter(h => h.id !== id);
-    serviciosProximos = serviciosProximos.filter(s => !serviciosHuerfanos.some(sh => sh.id === s.id));
     actualizarVistas();
     showMsg('success', 'Registro del historial eliminado');
     await cargarTodo();
