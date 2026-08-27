@@ -129,14 +129,25 @@ async function cargarTodo() {
     documentos = rDocs.data || [];
     historial = rHist.data || [];
 
-    // Limpiar servicios próximos huérfanos (cuyo reporte ya no existe)
+    console.log('servicios_proximos raw:', JSON.stringify(serviciosProximos));
+    console.log('reportes IDs:', reportes.map(r => r.id));
+
+    // Limpiar servicios próximos huérfanos (cuyo reporte ya no existe o no tienen reporte_id válido)
     const reportesIds = reportes.map(r => r.id);
-    const huerfanos = serviciosProximos.filter(s => s.reporte_id && !reportesIds.includes(s.reporte_id));
+    const huerfanos = serviciosProximos.filter(s => {
+      if (s.reporte_id && !reportesIds.includes(s.reporte_id)) return true;
+      if (!s.reporte_id) {
+        const existeEnHistorial = historial.some(h => h.maquina_id === s.maquina_id && h.tipo === s.tipo);
+        if (!existeEnHistorial) return true;
+      }
+      return false;
+    });
     if (huerfanos.length > 0) {
+      console.log('Eliminando huérfanos:', huerfanos);
       for (const h of huerfanos) {
         await sb.from('servicios_proximos').delete().eq('id', h.id);
       }
-      serviciosProximos = serviciosProximos.filter(s => !huerfanos.some(h => h.id === s.id));
+      serviciosProximos = serviciosProximos.filter(s => !huerfanos.some(x => x.id === s.id));
     }
 
     console.log('Datos cargados:', { maquinas, maquinistas, reportes, ots, reparaciones, serviciosProximos, documentos });
