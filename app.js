@@ -1511,6 +1511,11 @@ function agregarAMaquinaObra(selId, obra) {
 }
 
 async function asignarMaquinista(maqId, maquinistaId) {
+  if (!verificarAdmin()) {
+    // Si cancela o pone mal la contraseña, recargar para restaurar el select
+    await cargarTodo();
+    return;
+  }
   try {
     const { error } = await sb.from('maquinas')
       .update({ maquinista_id: maquinistaId || null })
