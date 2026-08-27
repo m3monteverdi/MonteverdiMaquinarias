@@ -348,7 +348,81 @@ async function eliminarHistorial(id) {
   }
 }
 
-// Rellenar selects dinámicos
+// Editar una entrada del historial de una máquina (protegido por contraseña)
+function editarHistorial(id) {
+  if (!verificarAdmin()) return;
+  const reg = historial.find(h => h.id === id);
+  if (!reg) return;
+
+  editingType = 'historial';
+  document.getElementById('edit-modal-title').innerText = 'Editar registro del historial';
+  document.getElementById('edit-form-container').innerHTML = `
+    <div class="field">
+      <label>Fecha</label>
+      <input type="date" id="edit-hist-fecha" value="${reg.fecha || ''}">
+    </div>
+    <div class="field">
+      <label>Máquina</label>
+      <select id="edit-hist-maq">
+        ${maquinas.map(m => `<option value="${m.id}" ${m.id === reg.maquina_id ? 'selected' : ''}>${m.id} - ${m.nombre}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="edit-hist-tipo">
+        <option value="falla" ${reg.tipo === 'falla' ? 'selected' : ''}>Falla</option>
+        <option value="service" ${reg.tipo === 'service' ? 'selected' : ''}>Service</option>
+        <option value="engrase" ${reg.tipo === 'engrase' ? 'selected' : ''}>Engrase</option>
+        <option value="neumatico" ${reg.tipo === 'neumatico' ? 'selected' : ''}>Neumáticos</option>
+        <option value="accesorio" ${reg.tipo === 'accesorio' ? 'selected' : ''}>Accesorio</option>
+        <option value="trabajo" ${reg.tipo === 'trabajo' ? 'selected' : ''}>Trabajo</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Descripción / Tarea</label>
+      <textarea id="edit-hist-des" style="min-height:80px">${reg.descripcion || ''}</textarea>
+    </div>
+    <div class="field">
+      <label>Taller</label>
+      <input type="text" id="edit-hist-taller" value="${reg.taller || ''}">
+    </div>
+    <div class="field">
+      <label>Repuestos</label>
+      <input type="text" id="edit-hist-repuestos" value="${reg.repuestos || ''}">
+    </div>
+    <div class="field">
+      <label>Horómetro</label>
+      <input type="number" id="edit-hist-hs" value="${reg.horometro != null ? reg.horometro : ''}">
+    </div>
+    <input type="hidden" id="edit-hist-id" value="${reg.id}">
+  `;
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+async function saveEditHistorial() {
+  const id = document.getElementById('edit-hist-id').value;
+  const fecha = document.getElementById('edit-hist-fecha').value;
+  const maquina_id = document.getElementById('edit-hist-maq').value;
+  const tipo = document.getElementById('edit-hist-tipo').value;
+  const descripcion = document.getElementById('edit-hist-des').value.trim();
+  const taller = document.getElementById('edit-hist-taller').value.trim();
+  const repuestos = document.getElementById('edit-hist-repuestos').value.trim();
+  const horometro = parseFloat(document.getElementById('edit-hist-hs').value) || null;
+
+  try {
+    const { error } = await sb.from('historial_maquinas')
+      .update({ fecha, maquina_id, tipo, descripcion, taller, repuestos, horometro })
+      .eq('id', id);
+
+    if (error) throw error;
+    showMsg('success', 'Registro editado correctamente');
+    closeEdit();
+    await cargarTodo();
+  } catch (err) {
+    console.error('Error al editar historial:', err);
+    showMsg('error', 'Error al editar el registro.');
+  }
+}
 function populateSelects() {
   const rMaq = document.getElementById('r-maq');
   const rMaqList = document.getElementById('r-maq-list');
@@ -1012,16 +1086,19 @@ function renderHistorial() {
             const desc = (r.descripcion || '-').length > 120 ? (r.descripcion || '-').substring(0, 120) + '…' : (r.descripcion || '-');
             const taller = (r.taller || '-').length > 80 ? (r.taller || '-').substring(0, 80) + '…' : (r.taller || '-');
             const repuestos = (r.repuestos || '-').length > 80 ? (r.repuestos || '-').substring(0, 80) + '…' : (r.repuestos || '-');
-            return `<tr>
-              <td style="white-space:nowrap;font-weight:600">${r.fecha || '-'}</td>
-              <td>${maqNom}</td>
-              <td><span style="white-space:nowrap">${ico} ${lbl}</span></td>
-              <td style="font-size:13px">${desc}</td>
-              <td style="font-size:13px">${taller}</td>
-              <td style="font-size:13px">${repuestos}</td>
-              <td style="text-align:right;white-space:nowrap">${r.horometro != null ? r.horometro + ' hs' : '-'}</td>
-              <td><button class="bo" style="padding:5px 10px;font-size:12px" onclick="eliminarHistorial('${r.id}')"><i class="ti ti-trash"></i> Eliminar</button></td>
-            </tr>`;
+             return `<tr>
+               <td style="white-space:nowrap;font-weight:600">${r.fecha || '-'}</td>
+               <td>${maqNom}</td>
+               <td><span style="white-space:nowrap">${ico} ${lbl}</span></td>
+               <td style="font-size:13px">${desc}</td>
+               <td style="font-size:13px">${taller}</td>
+               <td style="font-size:13px">${repuestos}</td>
+               <td style="text-align:right;white-space:nowrap">${r.horometro != null ? r.horometro + ' hs' : '-'}</td>
+               <td>
+                 <button class="bo" style="padding:5px 10px;font-size:12px;display:inline-flex;margin-right:5px" onclick="editarHistorial('${r.id}')"><i class="ti ti-edit"></i></button>
+                 <button class="bo" style="padding:5px 10px;font-size:12px;display:inline-flex;color:var(--red);border-color:var(--redl)" onclick="eliminarHistorial('${r.id}')"><i class="ti ti-trash"></i></button>
+               </td>
+             </tr>`;
           }).join('')}
         </tbody>
       </table>
@@ -1750,6 +1827,8 @@ function saveEditCurrent() {
     saveEditMaquina();
   } else if (editingType === 'maquinista') {
     saveEditMaquinista();
+  } else if (editingType === 'historial') {
+    saveEditHistorial();
   } else {
     closeEdit();
   }
