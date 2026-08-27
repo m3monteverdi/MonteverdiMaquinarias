@@ -1941,6 +1941,23 @@ function exportarExcel() {
     const wsOper = XLSX.utils.json_to_sheet(dataOper);
     XLSX.utils.book_append_sheet(wb, wsOper, 'Maquinistas');
 
+    // 5. Historial de Máquinas (reparaciones, services, engrases)
+    const dataHist = historial.map(h => {
+      const maq = maquinas.find(m => m.id === h.maquina_id);
+      return {
+        'Fecha': h.fecha || '',
+        'Máquina ID': h.maquina_id,
+        'Máquina': maq ? maq.nombre : 'S/D',
+        'Tipo': h.tipo ? h.tipo.toUpperCase() : '',
+        'Descripción': h.descripcion || '',
+        'Taller': h.taller || '',
+        'Repuestos': h.repuestos || '',
+        'Horómetro': h.horometro != null ? h.horometro : ''
+      };
+    });
+    const wsHist = XLSX.utils.json_to_sheet(dataHist);
+    XLSX.utils.book_append_sheet(wb, wsHist, 'Historial Máquinas');
+
     // Escribir archivo Excel
     XLSX.writeFile(wb, `Reporte_MonteverdiMaquinarias_${new Date().toISOString().split('T')[0]}.xlsx`);
     showMsg('success', 'Excel exportado correctamente');

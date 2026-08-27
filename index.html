@@ -314,27 +314,6 @@
         </div>
         <button class="bo" onclick="addMaquinista()" style="width:100%"><i class="ti ti-plus"></i> Agregar / Guardar Maquinista</button>
       </div>
-
-      <!-- Configuración de Documentación -->
-      <div class="card" style="margin-top:20px">
-        <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-shield"></i> Póliza de Seguro de Flota</p>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Subí el PDF unificado de la póliza de seguros para que los maquinistas la puedan consultar.</p>
-        <input type="file" id="seguro-file-admin" accept=".pdf" style="display:none" onchange="subirSeguroAdmin(this)">
-        <button class="bp" onclick="document.getElementById('seguro-file-admin').click()" style="width:100%"><i class="ti ti-upload"></i> Subir Póliza (.pdf)</button>
-        <div id="seguro-admin-status" style="font-size:12px;color:#888;margin-top:6px"></div>
-      </div>
-
-      <div class="card" style="margin-top:20px">
-        <p style="font-size:14px;font-weight:800;margin-bottom:12px;color:var(--az);display:flex;align-items:center;gap:6px"><i class="ti ti-book"></i> Manuales de Uso</p>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Subí manuales técnicos en PDF para que los maquinistas puedan consultarlos.</p>
-        <div class="field">
-          <label>Nombre del Manual (ej: Manual de Excavadora Komatsu)</label>
-          <input type="text" id="nc-manual-nom" placeholder="Nombre descriptivo" style="font-size:14px;padding:10px;border:1.5px solid #c5d0ef;border-radius:10px">
-        </div>
-        <input type="file" id="manual-file-admin" accept=".pdf" style="display:none" onchange="subirManualAdmin(this)">
-        <button class="bo" onclick="document.getElementById('manual-file-admin').click()" style="width:100%"><i class="ti ti-upload"></i> Seleccionar y Subir Manual (.pdf)</button>
-        <div id="manual-admin-status" style="font-size:12px;color:#888;margin-top:6px"></div>
-      </div>
     </div>
   </div>
 
