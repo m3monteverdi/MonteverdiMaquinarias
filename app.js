@@ -129,6 +129,16 @@ async function cargarTodo() {
     documentos = rDocs.data || [];
     historial = rHist.data || [];
 
+    // Limpiar servicios próximos huérfanos (cuyo reporte ya no existe)
+    const reportesIds = reportes.map(r => r.id);
+    const huerfanos = serviciosProximos.filter(s => s.reporte_id && !reportesIds.includes(s.reporte_id));
+    if (huerfanos.length > 0) {
+      for (const h of huerfanos) {
+        await sb.from('servicios_proximos').delete().eq('id', h.id);
+      }
+      serviciosProximos = serviciosProximos.filter(s => !huerfanos.some(h => h.id === s.id));
+    }
+
     console.log('Datos cargados:', { maquinas, maquinistas, reportes, ots, reparaciones, serviciosProximos, documentos });
 
     // Actualizar todas las interfaces
