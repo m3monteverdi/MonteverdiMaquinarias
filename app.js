@@ -1487,18 +1487,16 @@ function renderConfigListas() {
                 <th>Teléfono</th>
                 <th>Carnet</th>
                 <th>Vencimiento</th>
-                <th>Obra</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              ${maquinistas.map(m => `
+               ${maquinistas.map(m => `
                 <tr>
                   <td><strong>${m.nombre}</strong></td>
                   <td>${m.telefono || '-'}</td>
                   <td>Cat. ${m.categoria_carnet || '-'}</td>
                   <td>${m.vencimiento_carnet || '-'}</td>
-                  <td>${m.obra_asignada || '-'}</td>
                   <td>
                     <button class="bo" style="padding:4px 8px; display:inline-flex" onclick="openEditMaquinista('${m.id}')"><i class="ti ti-edit"></i></button>
                     <button class="bo" style="padding:4px 8px; display:inline-flex; color:var(--red); border-color:var(--redl)" onclick="deleteMaquinista('${m.id}')"><i class="ti ti-trash"></i></button>
@@ -1570,7 +1568,6 @@ async function addMaquinista() {
   const tel = document.getElementById('nc-oper-tel').value.trim();
   const cat = document.getElementById('nc-oper-cat').value.trim();
   const venc = document.getElementById('nc-oper-venc').value;
-  const obra = document.getElementById('nc-oper-obra').value.trim();
   const selectHabil = document.getElementById('nc-oper-habilitadas');
   
   const maqHabil = Array.from(selectHabil.selectedOptions).map(opt => opt.value);
@@ -1586,7 +1583,6 @@ async function addMaquinista() {
       telefono: tel,
       categoria_carnet: cat,
       vencimiento_carnet: venc ? venc : null,
-      obra_asignada: obra,
       maquinas_habilitadas: maqHabil
     }]);
 
@@ -1597,7 +1593,6 @@ async function addMaquinista() {
     document.getElementById('nc-oper-tel').value = '';
     document.getElementById('nc-oper-cat').value = '';
     document.getElementById('nc-oper-venc').value = '';
-    document.getElementById('nc-oper-obra').value = '';
     selectHabil.selectedIndex = -1;
 
     await cargarTodo();
@@ -1666,7 +1661,7 @@ function openEditMaquinista(id) {
   editingMaquinistaId = id;
   editingType = 'maquinista';
   document.getElementById('edit-modal-title').innerText = 'Editar datos del maquinista';
-  document.getElementById('edit-form-container').innerHTML = `
+    document.getElementById('edit-form-container').innerHTML = `
     <div class="field">
       <label>Nombre</label>
       <input type="text" id="edit-nom" value="${op.nombre || ''}">
@@ -1682,10 +1677,6 @@ function openEditMaquinista(id) {
     <div class="field">
       <label>Vencimiento de Carnet</label>
       <input type="date" id="edit-venc" value="${op.vencimiento_carnet || ''}">
-    </div>
-    <div class="field">
-      <label>Obra asignada</label>
-      <input type="text" id="edit-obra" value="${op.obra_asignada || ''}">
     </div>
   `;
   document.getElementById('edit-modal').style.display = 'flex';
@@ -1725,26 +1716,31 @@ async function saveEditMaquinista() {
   const tel = document.getElementById('edit-tel').value.trim();
   const cat = document.getElementById('edit-cat').value.trim();
   const venc = document.getElementById('edit-venc').value.trim();
-  const obra = document.getElementById('edit-obra').value.trim();
+
+  console.log('Guardando maquinista:', { id: editingMaquinistaId, nom, tel, cat, venc });
 
   try {
-    const { error } = await sb.from('maquinistas')
+    const { data, error } = await sb.from('maquinistas')
       .update({
         nombre: nom,
         telefono: tel,
         categoria_carnet: cat,
-        vencimiento_carnet: venc,
-        obra_asignada: obra
+        vencimiento_carnet: venc || null
       })
-      .eq('id', editingMaquinistaId);
+      .eq('id', editingMaquinistaId)
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error Supabase:', error);
+      throw error;
+    }
+    console.log('Guardado correctamente:', data);
     showMsg('success', 'Maquinista editado correctamente');
     closeEdit();
     await cargarTodo();
   } catch (err) {
-    console.error(err);
-    showMsg('error', 'Error al editar maquinista.');
+    console.error('Error al editar maquinista:', err);
+    showMsg('error', 'Error al editar maquinista: ' + (err.message || ''));
   }
 }
 
@@ -1935,7 +1931,6 @@ function exportarExcel() {
       'Teléfono': m.telefono,
       'Categoría Carnet': m.categoria_carnet,
       'Vencimiento Carnet': m.vencimiento_carnet,
-      'Obra Asignada': m.obra_asignada,
       'Máquinas Habilitadas': m.maquinas_habilitadas ? m.maquinas_habilitadas.join(', ') : ''
     }));
     const wsOper = XLSX.utils.json_to_sheet(dataOper);
