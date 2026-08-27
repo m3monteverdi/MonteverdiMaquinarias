@@ -1151,6 +1151,47 @@ function abrirProximosServices() {
 
 function closeSrvModal() {
   document.getElementById('srv-modal').style.display = 'none';
+  document.querySelector('#srv-modal div[style*="padding:16px 18px;border-bottom"] span').innerText = 'Próximos Services / Engrases';
+}
+
+function abrirMaquinasEnReparacion() {
+  const body = document.getElementById('srv-modal-body');
+  const maqsEnReparacion = maquinas.filter(m => m.estado === 'reparacion');
+
+  if (maqsEnReparacion.length === 0) {
+    body.innerHTML = '<p style="color:#888;font-size:14px;line-height:1.5;text-align:center;padding:30px"><i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--grn)"></i>No hay máquinas en reparación actualmente.</p>';
+  } else {
+    body.innerHTML = `
+      <p style="font-size:13px;color:#444;margin-bottom:14px;background:#fef2f2;padding:10px 12px;border-radius:8px;border-left:4px solid var(--red)">
+        <strong>${maqsEnReparacion.length} máquina${maqsEnReparacion.length !== 1 ? 's' : ''} en reparación</strong>
+      </p>
+      <div>
+        ${maqsEnReparacion.map(m => {
+          const otsAbiertas = ots.filter(o => o.estado === 'abierta' && (() => {
+            const rep = reportes.find(r => r.id === o.reporte_id);
+            return rep && rep.maquina_id === m.id;
+          })());
+          const descOT = otsAbiertas.length > 0 ? (reportes.find(r => r.id === otsAbiertas[0].reporte_id) || {}).descripcion : null;
+          return `
+            <div style="padding:12px;border:1px solid #fecaca;border-left:4px solid var(--red);border-radius:8px;margin-bottom:10px;background:#fff">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                <div>
+                  <div style="font-weight:700;font-size:14px;color:var(--dark)">${m.id} — ${m.nombre}</div>
+                  <div style="font-size:12px;color:#666;margin-top:2px">${m.modelo || ''} · ${m.horometro_actual != null ? m.horometro_actual + ' hs' : ''}</div>
+                </div>
+                <span class="maq-tag" style="background:var(--redl);color:var(--red);white-space:nowrap">EN REPARACIÓN</span>
+              </div>
+              ${descOT ? `<div style="margin-top:8px;font-size:12px;color:#555;background:#f9fafb;padding:8px;border-radius:6px"><strong>Falla:</strong> ${descOT.length > 150 ? descOT.substring(0, 150) + '…' : descOT}</div>` : ''}
+              ${otsAbiertas.length > 0 ? `<div style="margin-top:6px;font-size:11px;color:#888">OT: ${otsAbiertas.map(o => o.numero).join(', ')}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  document.querySelector('#srv-modal div[style*="padding:16px 18px;border-bottom"] span').innerText = 'Máquinas en Reparación';
+  document.getElementById('srv-modal').style.display = 'flex';
 }
 
 function renderDashboard() {
