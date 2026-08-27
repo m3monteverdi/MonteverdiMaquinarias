@@ -1319,7 +1319,8 @@ function renderDashboard() {
 
   const histFiltrado = historial.filter(h => {
     const anio = (h.fecha || '').slice(0, 4);
-    return dashboardAnioSeleccionado === 'todos' || anio === dashboardAnioSeleccionado;
+    const esReparacion = h.tipo === 'falla' || h.tipo === 'trabajo';
+    return esReparacion && (dashboardAnioSeleccionado === 'todos' || anio === dashboardAnioSeleccionado);
   });
 
   const conteo = {};
@@ -1336,7 +1337,7 @@ function renderDashboard() {
     const maxCant = rankeadas[0][1];
     const etiquetaAnio = dashboardAnioSeleccionado === 'todos' ? 'en total' : `en ${dashboardAnioSeleccionado}`;
     rankingContainer.innerHTML = `
-      <p style="font-size:12px;color:#888;margin-bottom:12px">${totalRegistros} reparaciones/mantenimientos ${etiquetaAnio}.</p>
+      <p style="font-size:12px;color:#888;margin-bottom:12px">${totalRegistros} reparaciones ${etiquetaAnio}.</p>
       <div>
         ${rankeadas.map(([maqId, cant]) => {
           const maq = maquinas.find(m => m.id === maqId);
