@@ -130,8 +130,8 @@ async function cargarTodo() {
     historial = rHist.data || [];
 
     console.log('servicios_proximos raw:', JSON.stringify(serviciosProximos));
-    console.log('reportes IDs:', reportes.map(r => ({ id: r.id, maquina_id: r.maquina_id, tipo: r.tipo, descripcion: r.descripcion })));
-    console.log('historial:', historial.map(h => ({ id: h.id, maquina_id: h.maquina_id, tipo: h.tipo, descripcion: h.descripcion })));
+    console.table(reportes.map(r => ({ id: r.id, maquina_id: r.maquina_id, tipo: r.tipo, descripcion: (r.descripcion || '').substring(0, 50) })));
+    console.log('historial XCMG-CF03:', JSON.stringify(historial.filter(h => h.maquina_id === 'XCMG-CF03')));
 
     // Limpiar servicios próximos huérfanos (cuyo reporte ya no existe o no tienen reporte_id válido)
     const reportesIds = reportes.map(r => r.id);
