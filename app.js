@@ -1182,11 +1182,11 @@ function abrirMaquinasEnReparacion() {
   const maqsEnReparacion = maquinas.filter(m => m.estado === 'reparacion');
 
   if (maqsEnReparacion.length === 0) {
-    body.innerHTML = '<p style="color:#888;font-size:14px;line-height:1.5;text-align:center;padding:30px"><i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--grn)"></i>No hay máquinas en reparación actualmente.</p>';
+    body.innerHTML = '<p style="color:#888;font-size:14px;line-height:1.5;text-align:center;padding:30px"><i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--grn)"></i>No hay máquinas en reparación ni que necesiten atención actualmente.</p>';
   } else {
     body.innerHTML = `
       <p style="font-size:13px;color:#444;margin-bottom:14px;background:#fef2f2;padding:10px 12px;border-radius:8px;border-left:4px solid var(--red)">
-        <strong>${maqsEnReparacion.length} máquina${maqsEnReparacion.length !== 1 ? 's' : ''} en reparación</strong>
+        <strong>${maqsEnReparacion.length} máquina${maqsEnReparacion.length !== 1 ? 's' : ''} en reparación o necesitando atención</strong>
       </p>
       <div>
         ${maqsEnReparacion.map(m => {
@@ -1213,7 +1213,7 @@ function abrirMaquinasEnReparacion() {
     `;
   }
 
-  document.querySelector('#srv-modal div[style*="padding:16px 18px;border-bottom"] span').innerText = 'Máquinas en Reparación';
+  document.querySelector('#srv-modal div[style*="padding:16px 18px;border-bottom"] span').innerText = 'Máquinas en Reparación o que Necesitan Atención';
   document.getElementById('srv-modal').style.display = 'flex';
 }
 
