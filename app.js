@@ -1470,16 +1470,27 @@ function renderObrasDashboard() {
             <span class="obra-dash-count">${lista.length}</span>
           </div>
           <div class="obra-dash-body">
-            ${lista.length === 0
-              ? '<div class="obra-dash-empty">Sin máquinas asignadas</div>'
-              : lista.map(m => `
-                <div class="obra-dash-item">
-                  <div>
-                    <div class="obra-dash-id">${codigoCorto(m.id)}</div>
-                    <div class="obra-dash-nom">${m.nombre || '-'}</div>
-                  </div>
-                  <button class="obra-dash-remove" title="Sacar de ${obra}" onclick="cambiarUbicacionMaquina('${(m.id || '').replace(/'/g, "\\'")}', 'OTRAS')"><i class="ti ti-x"></i></button>
-                </div>`).join('')}
+             ${lista.length === 0
+               ? '<div class="obra-dash-empty">Sin máquinas asignadas</div>'
+               : lista.map(m => {
+                 const maquinistaAsignado = m.maquinista_id ? maquinistas.find(o => o.id === m.maquinista_id) : null;
+                 const selId = 'mq_' + m.id.replace(/[^a-zA-Z0-9]/g, '_');
+                 return `
+                 <div class="obra-dash-item">
+                   <div>
+                     <div class="obra-dash-id">${codigoCorto(m.id)}</div>
+                     <div class="obra-dash-nom">${m.nombre || '-'}</div>
+                   </div>
+                   <button class="obra-dash-remove" title="Sacar de ${obra}" onclick="cambiarUbicacionMaquina('${(m.id || '').replace(/'/g, "\\'")}', 'OTRAS')"><i class="ti ti-x"></i></button>
+                 </div>
+                 <div style="margin-top:4px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+                   <select id="${selId}" onchange="asignarMaquinista('${(m.id || '').replace(/'/g, "\\'")}', this.value)" style="font-size:11px;padding:4px 6px;border:1px solid #c5d0ef;border-radius:6px;flex:1">
+                     <option value="">— Asignar maquinista —</option>
+                     ${maquinistas.map(o => `<option value="${o.id}" ${o.id === m.maquinista_id ? 'selected' : ''}>${o.nombre}</option>`).join('')}
+                   </select>
+                   ${maquinistaAsignado ? `<span style="font-size:11px;color:var(--az);font-weight:600"><i class="ti ti-user"></i> ${maquinistaAsignado.nombre}</span>` : ''}
+                 </div>`;
+               }).join('')}
             <div class="obra-dash-add">
               <select id="${sid}">
                 <option value="">Agregar máquina…</option>
@@ -1497,6 +1508,25 @@ function agregarAMaquinaObra(selId, obra) {
   const sel = document.getElementById(selId);
   if (!sel || !sel.value) { showMsg('error', 'Seleccioná una máquina para agregar a ' + obra); return; }
   cambiarUbicacionMaquina(sel.value, obra);
+}
+
+async function asignarMaquinista(maqId, maquinistaId) {
+  try {
+    const { error } = await sb.from('maquinas')
+      .update({ maquinista_id: maquinistaId || null })
+      .eq('id', maqId);
+
+    if (error) throw error;
+    if (maquinistaId) {
+      const maq = maquinas.find(m => m.id === maqId);
+      const oper = maquinistas.find(o => o.id === maquinistaId);
+      if (maq && oper) showMsg('success', `Maquinista ${oper.nombre} asignado a ${maqId}`);
+    }
+    await cargarTodo();
+  } catch (err) {
+    console.error('Error al asignar maquinista:', err);
+    showMsg('error', 'Error al asignar maquinista.');
+  }
 }
 
 function toggleObraCard(head) {
